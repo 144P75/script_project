@@ -1,11 +1,9 @@
-# 🐾 Virtual Pet Companion (CLI)
+# 🐾 Virtual Pet Companion (CLI Application)
 
-ระบบจำลองการดูแลสัตว์เลี้ยงเสมือนจริง พัฒนาในรูปแบบ Command Line Interface (CLI) ด้วยภาษา Python โดยประยุกต์ใช้หลักการเขียนโปรแกรมเชิงวัตถุ (Object-Oriented Programming - OOP), การบันทึกข้อมูลยั่งยืนลงไฟล์ JSON, การดึงข้อมูลจาก External API (Dog API / Cat Facts API) และการจัดโครงสร้างโค้ดแบบแยกชั้น (Modular Architecture)
+ระบบจำลองสัตว์เลี้ยงเสมือนจริงบน Terminal/CLI พัฒนาด้วยภาษา Python ตามหลัก **Object-Oriented Programming (OOP)** และ **Modular Architecture** เพื่อรองรับการประมวลผลสถานะตามเวลาจริง (Time-based Decay), การเชื่อมต่อ External API และการทำงานร่วมกับ CI/CD Pipeline
 
 ---
 ## 🎯 วัตถุประสงค์ของโครงการ (Project Objectives)
-
-## 🎯 วัตถุประสงค์ของโปรเจกต์ (Project Objectives)
 
 1. **สร้างเกมเลี้ยงสัตว์เสมือนจริงบน CLI:** พัฒนาโปรแกรมดูแลสัตว์เลี้ยงที่โต้ตอบผ่าน Command Line มีระบบให้อาหาร เล่นด้วย และดูสถานะ
 2. **ฝึกเขียนโปรแกรมด้วยแนวคิด OOP:** ฝึกแบ่งโครงสร้างโค้ดอย่างเป็นระบบด้วยภาษา Python ผ่าน Class หลัก เช่น `Pet`, `MoodTracker` และ `Interaction`
@@ -16,27 +14,64 @@
 
 ---
 
-## สถาปัตยกรรมระบบ (Architectural Scope)
+## 🌟 คุณสมบัติเด่นของระบบ (Key Features)
+
+* **Modular Architecture:** แยก Presentation Layer (`src/cli.py`) และ Business Logic (`src/pet.py`) ชัดเจน
+* **OOP Design:** พัฒนาด้วย 3 คลาสหลัก ได้แก่ `Pet`, `MoodTracker` และ `Interaction`
+* **Data Persistence:** บันทึกและดึงสถานะผ่านไฟล์ `pet_state.json`
+* **Time-based Decay:** คำนวณความหิว พลังงาน และอารมณ์ลดลงตามเวลาจริง
+* **API Integration:** ดึงข้อมูลสุ่มเกร็ดความรู้แมวจาก Cat Facts API
+* **DevOps Ready:** มี CI/CD Pipeline ด้วย GitHub Actions (`pytest` & `flake8`)
+
+---
+
+## 🏗️ สถาปัตยกรรมระบบ (Architectural Scope)
+
 โปรเจกต์นี้ถูกออกแบบโดยแบ่งหน้าที่การทำงานอย่างชัดเจน (Separation of Concerns) ออกเป็น 3 ชั้นหลัก:
-1. **Presentation Layer:** ส่วนจัดการ CLI, การแสดงผลหน้าจอ/เมนูหลัก และรับอินพุตพร้อมตรวจสอบความถูกต้อง (Input Validation)
-2. **Business Logic Layer:** ส่วนประมวลผลคำนวณสถานะสัตว์เลี้ยง (Hunger, Energy), การคำนวณ Decay Over Time และการประเมินอารมณ์ (MoodTracker)
-3. **Data Access Layer:** ส่วนการอ่านและบันทึกข้อมูลสถานะลงในไฟล์ `pet_state.json` (Data Persistence)
+
+1. **Presentation Layer (`src/cli.py`):** ส่วนจัดการ CLI, การแสดงผลหน้าจอ/เมนูหลัก และรับอินพุตพร้อมตรวจสอบความถูกต้อง (Input Validation & Sanitization)
+2. **Business Logic Layer (`src/pet.py`):** ส่วนประมวลผลคำนวณสถานะสัตว์เลี้ยง (Hunger, Energy, Happiness), การคำนวณ Decay Over Time และการประเมินอารมณ์ (`MoodTracker`)
+3. **Data Access Layer (`src/main.py` / `pet_state.json`):** ส่วนการอ่านและบันทึกข้อมูลสถานะลงในไฟล์ `pet_state.json` (Data Persistence)
 
 ---
 
-## สมาชิกในทีมและหน้าที่ความรับผิดชอบ (Team Roles)
+## 📁 โครงสร้างโปรเจกต์ (Project Structure)
 
-| ชื่อ-นามสกุล | รหัสนักศึกษา | บทบาทหลัก (Role) | หน้าที่และความรับผิดชอบ |
-| :--- | :--- | :--- |:--- |
-| **นางสาวพิชยา สิทธิพันธ์** | **673380596-5** | **Planner** | • วางแผนและนิยามสเปกต์ระบบในเอกสาร `PLAN.md`<br>• กำหนด Definition of Done (DoD)<br>• ควบคุมภาพรวมสถาปัตยกรรมและการส่งมอบงาน |
-| **นางสาวมุกดา บุญประจันทร์** | **673380598-1** | **Coder** | • เขียนโค้ดระบบ CLI, ควบคุม Control Flow และ Menu Loop<br>• พัฒนาโครงสร้าง Class ตามแนวคิด OOP (`Pet`, `MoodTracker`, `Interaction`) |
-| **นางสาวพรีมภัทร ภาวัฒนวคุณ** | **673380594-9** | **Debugger** | • ออกแบบและทำการทดสอบเคสขอบเขต (Edge Case Testing)<br>• ตรวจสอบ Exception Handling และ Input Sanitization<br>• สรุปรายงาน QA และจัดการ Pull Request (PR) บน GitHub |
-
-*(หมายเหตุ: บทบาทหน้าที่อาจมีการหมุนเวียนกันตามข้อกำหนดในแต่ละ Sprint)*
-
+```text
+virtual-pet-cli/
+├── .github/
+│   └── workflows/
+│       └── ci.yml          # GitHub Actions CI/CD Pipeline
+├── src/
+│   ├── __init__.py
+│   ├── cli.py             # Presentation Layer (CLI & UI)
+│   ├── pet.py             # Business Logic Layer (OOP Classes & API)
+│   └── main.py            # Entry Point & Data Access Layer
+├── tests/
+│   ├── __init__.py
+│   └── test_cli.py        # Automated Unit Tests
+├── .gitignore             # Git Ignore File
+├── ALL_SPRINTS.md         # สรุปผลการดำเนินงานและ QA Reports แต่ละ Sprint
+├── pet_state.json         # ไฟล์บันทึกสถานะสัตว์เลี้ยง (Auto-generated)
+├── README.md              # เอกสารอธิบายโปรเจกต์
+└── requirements.txt       # Dependencies (requests, pytest, flake8)
+```
 ---
 
-## โครงสร้างเอกสารโครงการ (Documentation Structure)
-* **`README.md`** - เอกสารอธิบายภาพรวมโครงการ สถาปัตยกรรม และบทบาทของสมาชิกในทีม
-* **`ALL_SPRINTS.md`** - เอกสารสรุปรายละเอียด ความก้าวหน้า และผลการทดสอบของทุก Sprint
-* **`PLAN.md`** - เอกสารวางแผนงาน นิยามขอบเขต และ Definition of Done (DoD) ประจำสัปดาห์
+## 🚀 การรันโปรแกรม (Execution)
+
+1. **เปิด Terminal / Command Prompt** และเข้าสู่โฟลเดอร์ Root ของโปรเจกต์
+2. **รันไฟล์ Main Script:**
+   ```bash
+   python -m src.main
+
+---
+## 👥 สมาชิกในทีม (Team Members)
+
+| รหัสนักศึกษา | ชื่อ-นามสกุล |
+| :---: | :--- |
+| **673380594-9** | นางสาวพรีมภัทร ภาวัฒนวคุณ | 
+| **673380596-5** | นางสาวพิชยา สิทธิพันธ์ | 
+| **673380598-1** | นางสาวมุกดา บุญประจันทร์ | 
+
+
