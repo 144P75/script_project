@@ -1,0 +1,9 @@
+{
+    "Buddy": {
+        "name": "Buddy",
+        "hunger": 50,
+        "energy": 50,
+        "happiness": 50,
+        "last_updated": 1789910114.255171
+    }
+}
