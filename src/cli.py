@@ -17,13 +17,5 @@ class CLIHandler:
         print("-" * 40)
 
     @staticmethod
-    def get_command_input() -> str:
-        """รับค่า ทำความสะอาดอินพุตด้วย .strip().lower()"""
-        try:
-            # [Sprint 2] เพิ่มเมนูใหม่ addpet, switchpet และ history
-            raw_input = input(
-                "เลือกคำสั่ง [feed / play / sleep / fact / save / addpet / switchpet / history / quit]: "
-            )
-            return raw_input.strip().lower()
-        except (KeyboardInterrupt, EOFError):
-            return "quit"
+    def get_command_input():
+        return input("เลือกคำสั่ง [feed / play / sleep / fact / save / addpet / switchpet / history / quit]: ").strip().lower()

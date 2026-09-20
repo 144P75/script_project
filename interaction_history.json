@@ -352,5 +352,53 @@
         "source": "Cat Facts API",
         "kind": "fact",
         "content": "คุณใช้เวลาร่วมกับ Mimi!\n> 🐱 เกร็ดความรู้แมว: The longest living cat on record according to the Guinness Book belongs to the late Creme Puff of Austin, Texas who lived to the ripe old age of 38 years and 3 days!"
+    },
+    {
+        "timestamp": "2026-09-20T21:29:44",
+        "source": "User",
+        "kind": "feed",
+        "content": "Mimi เหนื่อยเกินกว่าจะกิน! ต้องให้นอนพักก่อน"
+    },
+    {
+        "timestamp": "2026-09-20T21:29:49",
+        "source": "User",
+        "kind": "sleep",
+        "content": "Mimi ได้นอนหลับเต็มอิ่มและฟื้นฟูพลังงานเต็มที่!"
+    },
+    {
+        "timestamp": "2026-09-20T21:29:52",
+        "source": "User",
+        "kind": "play",
+        "content": "Mimi หิวเกินกว่าจะเล่น!"
+    },
+    {
+        "timestamp": "2026-09-20T21:29:57",
+        "source": "User",
+        "kind": "feed",
+        "content": "คุณให้อาหาร Mimi แล้ว! ความหิวยานลง"
+    },
+    {
+        "timestamp": "2026-09-20T21:29:59",
+        "source": "User",
+        "kind": "feed",
+        "content": "คุณให้อาหาร Mimi แล้ว! ความหิวยานลง"
+    },
+    {
+        "timestamp": "2026-09-20T21:30:00",
+        "source": "User",
+        "kind": "feed",
+        "content": "คุณให้อาหาร Mimi แล้ว! ความหิวยานลง"
+    },
+    {
+        "timestamp": "2026-09-20T21:30:19",
+        "source": "User",
+        "kind": "play",
+        "content": "คุณเล่นกับ Mimi สนุกมากๆ!"
+    },
+    {
+        "timestamp": "2026-09-20T21:30:20",
+        "source": "User",
+        "kind": "play",
+        "content": "คุณเล่นกับ Mimi สนุกมากๆ!"
     }
 ]

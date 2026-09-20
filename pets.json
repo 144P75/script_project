@@ -1,16 +1,16 @@
 {
-    "Mimi": {
-        "name": "Mimi",
-        "hunger": 100,
-        "energy": 0,
-        "happiness": 0,
-        "last_updated": 1789909616.8185375
-    },
-    "Moomoo": {
-        "name": "Moomoo",
-        "hunger": 100,
-        "energy": 0,
-        "happiness": 0,
-        "last_updated": 1789903221.4486587
-    }
+  "Mimi": {
+    "name": "Mimi",
+    "hunger": 10,
+    "energy": 100,
+    "happiness": 0,
+    "last_updated": 1789914600.626251
+  },
+  "Moomoo": {
+    "name": "Moomoo",
+    "hunger": 100,
+    "energy": 0,
+    "happiness": 0,
+    "last_updated": 1789903221.4486587
+  }
 }

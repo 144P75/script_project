@@ -43,6 +43,7 @@ def main():
         save_pet_data(pet)
         print(f"\nสร้างสัตว์เลี้ยงใหม่ชื่อ {pet.name} เรียบร้อย!")
 
+    # ✅ ใช้ PetManager จัดการหลายตัว
     manager = PetManager()
     if pet.name not in manager.pets:
         manager.pets[pet.name] = pet
@@ -111,7 +112,7 @@ def main():
                             print(f"[{entry['timestamp']}] {entry['source']} ({entry['kind']}): {entry['content']}")
 
                     elif choice == "2":
-                        keyword = input("🔎 กรอก Keyword (เช่น feed, play, sleep, fact หรือข้อความที่เกี่ยวข้องกับกิจกรรม): ").strip()
+                        keyword = input("🔎 กรอก Keyword: ").strip()
                         results = history.search_history(data, keyword)
                         if not results:
                             print("\n--- ไม่พบข้อมูลที่ตรงกับคำค้นหา ---")

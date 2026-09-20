@@ -1,23 +1,29 @@
-# [Sprint 2] Unit tests สำหรับ PetManager
+import tempfile
 import os
 from src.pet_manager import PetManager
 
-def test_add_and_switch_pet(tmp_path, monkeypatch):
-    monkeypatch.setattr("src.pet_manager.DATA_FILE", str(tmp_path / "pets.json"))
-    manager = PetManager()
-    msg = manager.add_pet("Milo")
-    assert "Milo" in msg
-    assert "Milo" in manager.pets
+def test_feed_auto_save():
+    tmp_data = tempfile.NamedTemporaryFile(delete=False)
+    tmp_backup = tempfile.NamedTemporaryFile(delete=False)
 
-    msg2 = manager.switch_pet("Milo")
-    assert "Milo" in msg2
-    assert manager.active_pet.name == "Milo"
-
-def test_save_and_load_pets(tmp_path, monkeypatch):
-    monkeypatch.setattr("src.pet_manager.DATA_FILE", str(tmp_path / "pets.json"))
-    manager = PetManager()
+    manager = PetManager(data_file=tmp_data.name, backup_file=tmp_backup.name)
     manager.add_pet("Buddy")
-    manager.save_pets()
+    manager.feed("Buddy")
 
-    new_manager = PetManager()
-    assert "Buddy" in new_manager.pets
+    with open(tmp_data.name, "r", encoding="utf-8") as f:
+        data = f.read()
+    assert "Buddy" in data
+
+def test_backup_recovery():
+    tmp_data = tempfile.NamedTemporaryFile(delete=False)
+    tmp_backup = tempfile.NamedTemporaryFile(delete=False)
+
+    manager = PetManager(data_file=tmp_data.name, backup_file=tmp_backup.name)
+    manager.pets = {"Buddy": {"hunger": 5, "mood": 5, "energy": 5}}
+    manager.save()
+    
+    with open(tmp_data.name, "w") as f:
+        f.write("INVALID JSON")
+
+    recovered = manager.load()
+    assert "Buddy" in recovered
