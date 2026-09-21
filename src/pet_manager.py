@@ -41,4 +41,4 @@ class PetManager:
                     data = json.load(f)
                     return {name: Pet.from_dict(pet_data) for name, pet_data in data.items()}
             except (FileNotFoundError, json.JSONDecodeError):
-                return {"Buddy": Pet("Buddy")}
+                return {}
