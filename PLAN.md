@@ -11,9 +11,9 @@
 | **Sprint 1** | **พรีม** | **Planner** | • วางแผนและออกแบบสถาปัตยกรรมระบบแบบ Modular (`src/pet.py`, `src/cli.py`, `src/main.py`)<br>• ออกแบบโครงสร้างคลาส OOP (`Pet`, `MoodTracker`, `Interaction`)<br>• ร่างลำดับการทำงาน (Control Flow) และสเปกของไฟล์บันทึกข้อมูล `pet_state.json` |
 | | **เอม** | **Coder** | • พัฒนา Business Logic Layer ใน `src/pet.py` (ระบบสถานะ, คำนวณ Time-based Decay, Cat Facts API)<br>• พัฒนา Presentation Layer ใน `src/cli.py` (หน้าจอ CLI, Status Display)<br>• เขียนฟังก์ชันเชื่อมต่อระบบ Data Access Layer และ Loop ใน `src/main.py` |
 | | **เชอร์** | **Debugger / QA** | • ทำ Input Validation และ Sanitization (`.strip().lower()`) เพื่อจัดการอินพุตขยะ<br>• ดักจับ Exception (`KeyboardInterrupt`, `EOFError`, `FileNotFoundError`) ป้องกันโปรแกรม Crash<br>• พัฒนาชุดทดสอบ Unit Tests ใน `tests/test_cli.py` และตั้งค่า CI/CD Pipeline (`ci.yml`) |
-| **Sprint 2** | **ชื่อผู้รับผิดชอบ** | *(ว่างไว้ระบุบทบาท)* | • *(รอระบุรายละเอียดเมื่อเริ่ม Sprint 2)* |
-| | **ชื่อผู้รับผิดชอบ** | *(ว่างไว้ระบุบทบาท)* | • *(รอระบุรายละเอียดเมื่อเริ่ม Sprint 2)* |
-| | **ชื่อผู้รับผิดชอบ** | *(ว่างไว้ระบุบทบาท)* | • *(รอระบุรายละเอียดเมื่อเริ่ม Sprint 2)* |
+| **Sprint 2** | **พรีม** | **Debugger / QA** | • *(รอระบุรายละเอียดเมื่อเริ่ม Sprint 2)* |
+| | **เอม** | **Planner** | • *(รอระบุรายละเอียดเมื่อเริ่ม Sprint 2)* |
+| | **เชอร์** | **Coder** | • *(รอระบุรายละเอียดเมื่อเริ่ม Sprint 2)* |
 | **Sprint 3** | **ชื่อผู้รับผิดชอบ** | *(ว่างไว้ระบุบทบาท)* | • *(รอระบุรายละเอียดเมื่อเริ่ม Sprint 3)* |
 | | **ชื่อผู้รับผิดชอบ** | *(ว่างไว้ระบุบทบาท)* | • *(รอระบุรายละเอียดเมื่อเริ่ม Sprint 3)* |
 | | **ชื่อผู้รับผิดชอบ** | *(ว่างไว้ระบุบทบาท)* | • *(รอระบุรายละเอียดเมื่อเริ่ม Sprint 3)* |
