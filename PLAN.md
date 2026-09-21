@@ -68,7 +68,14 @@ script_project/
 └── requirements.txt
 ```
 
-## การรันโปรแกรม (Execution)
+## 🚀 การรันโปรแกรม (Execution)
+ 
+1. **เปิด Terminal / Command Prompt** และเข้าสู่โฟลเดอร์ Root ของโปรเจกต์
+2. **ติดตั้ง Dependencies:**
 ```bash
-python -m src.main
+   pip install -r requirements.txt
+```
+3. **รันไฟล์ Main Script:**
+```bash
+   python -m src.main
 ```
