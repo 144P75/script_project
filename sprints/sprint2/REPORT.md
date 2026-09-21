@@ -12,9 +12,17 @@
 
 ## เป้าหมายและขอบเขต (Scope & DoD)
 - [ ] เพิ่มความสามารถในการจัดการสัตว์เลี้ยงหลายตัว (Multi-Pet Management)
-- [ ] พัฒนาระบบค้นหา กรองข้อมูล และเรียงลำดับประวัติการโต้ตอบของสัตว์เลี้ยง
+- [ ] พัฒนาระบบ Interaction History (ระบบค้นหา กรองข้อมูล และเรียงลำดับประวัติการโต้ตอบของสัตว์เลี้ยง)
 - [ ] ปรับปรุง Data Access Layer ให้รองรับการสำรองข้อมูล (Backup & Auto-Save)
 - [ ] ขยายการเชื่อมต่อ API เพิ่มเติม
+- [ ] ทำระบบ Data Persistence ด้วย JSON (บันทึก/โหลดสถานะสัตว์เลี้ยง)
+
+### ขอบเขตงานส่วนโค้ด
+- `src/pet_manager.py`: จัดการสัตว์เลี้ยงหลายตัว, active_pet, บันทึก/โหลด JSON ด้วย `to_dict()` และ `from_dict()`  
+- `src/cli.py`: แสดงผลสถานะสัตว์เลี้ยงใน CLI, รับคำสั่งจากผู้ใช้  
+- `src/main.py`: จุดเริ่มต้นโปรแกรม, โหลด/บันทึกสัตว์เลี้ยง, loop หลักรับคำสั่ง, เรียกใช้ PetManager และ CLI  
+- `web/history.py`: ระบบ Interaction History (บันทึก, ค้นหา, กรอง, เรียงลำดับ)  
+- `tests/`: Unit Test ครอบคลุม pet_manager, cli, interaction, history 
 
 ## Definition of Done (DoD)
 
