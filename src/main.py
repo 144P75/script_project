@@ -1,61 +1,24 @@
 import sys
-import json
-import os
-from src.pet import Pet
 from src.cli import CLIHandler
 from src.pet_manager import PetManager
 from web import history
 
-DATA_FILE = "pet_state.json"
-
-
-def load_pet_data():
-    if not os.path.exists(DATA_FILE):
-        return None
-    try:
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception as e:
-        print(f"[Warning] ไม่สามารถอ่านไฟล์ข้อมูลได้: {e}")
-        return None
-
-
-def save_pet_data(pet: Pet):
-    try:
-        with open(DATA_FILE, "w", encoding="utf-8") as f:
-            json.dump(pet.to_dict(), f, indent=4, ensure_ascii=False)
-        return True
-    except Exception as e:
-        print(f"[Error] ไม่สามารถบันทึกข้อมูลได้: {e}")
-        return False
-
 
 def main():
     CLIHandler.display_welcome()
-    pet_data = load_pet_data()
-
-    if pet_data:
-        pet = Pet.from_dict(pet_data)
-        print(f"\nต้อนรับการกลับมา! โหลดข้อมูลของ {pet.name} เรียบร้อย")
-    else:
-        name = input("กรุณาตั้งชื่อสัตว์เลี้ยงของคุณ: ").strip() or "Buddy"
-        pet = Pet(name=name)
-        save_pet_data(pet)
-        print(f"\nสร้างสัตว์เลี้ยงใหม่ชื่อ {pet.name} เรียบร้อย!")
-
-    # ✅ ใช้ PetManager จัดการหลายตัว
     manager = PetManager()
-    if pet.name not in manager.pets:
-        manager.pets[pet.name] = pet
-        manager.active_pet = pet
-        manager.save_pets()
+
+    if not manager.pets:
+        name = input("กรุณาตั้งชื่อสัตว์เลี้ยงของคุณ: ").strip() or "Buddy"
+        print(manager.add_pet(name))
+    else:
+        print(f"\nต้อนรับการกลับมา! โหลดข้อมูลของ {manager.active_pet.name} เรียบร้อย")
 
     while True:
         CLIHandler.display_status(manager.active_pet)
         cmd = CLIHandler.get_command_input()
 
         if cmd in ["quit", "exit"]:
-            save_pet_data(manager.active_pet)
             manager.save_pets()
             print(f"\nบันทึกข้อมูลเรียบร้อย ลาก่อนจาก {manager.active_pet.name}! 👋")
             sys.exit(0)
@@ -64,26 +27,29 @@ def main():
             msg = manager.active_pet.feed()
             print(f"\n> {msg}")
             history.add_entry("User", "feed", msg)
+            manager.save_pets()
 
         elif cmd == "play":
             msg = manager.active_pet.play()
             print(f"\n> {msg}")
             history.add_entry("User", "play", msg)
+            manager.save_pets()
 
         elif cmd == "sleep":
             msg = manager.active_pet.sleep()
             print(f"\n> {msg}")
             history.add_entry("User", "sleep", msg)
+            manager.save_pets()
 
         elif cmd == "fact":
             msg = manager.active_pet.interact_api()
             print(f"\n> {msg}")
             history.add_entry("Cat Facts API", "fact", msg)
+            manager.save_pets()
 
         elif cmd == "save":
-            if save_pet_data(manager.active_pet):
-                manager.save_pets()
-                print("\n> บันทึกสถานะสัตว์เลี้ยงสำเร็จ!")
+            manager.save_pets()
+            print("\n> บันทึกสถานะสัตว์เลี้ยงสำเร็จ!")
 
         elif cmd == "addpet":
             name = input("ตั้งชื่อสัตว์เลี้ยงใหม่: ").strip()
@@ -169,7 +135,7 @@ def main():
                         print("\n[คำสั่งไม่ถูกต้อง] กรุณาเลือก 1–5")
 
         else:
-            print("\n[คำสั่งไม่ถูกต้อง] กรุณาพิมพ์: feed, play, sleep, fact, save, addpet, switchpet, history หรือ quit")
+            print("\n[คำสั่งไม่ถูกต้อง] กรุณาพิมพ์: feed, play, sleep, fact, save, add pet, switch pet, history หรือ quit")
 
 
 if __name__ == "__main__":

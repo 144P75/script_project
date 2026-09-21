@@ -59,8 +59,7 @@ script_project/
 ├── tests/                              Automated Unit Tests
 │   ├── test_cli.py                     ทดสอบ MoodTracker, Pet (decay, feed)
 │   ├── test_history.py                 ทดสอบ search/filter/sort ของ web/history.py
-│   ├── test_pet_manager.py             ทดสอบ PetManager (save/load, backup)
-│   └── test_interaction.py             ทดสอบ Cat Facts API (mock)
+│   └── test_pet_manager.py             ทดสอบ PetManager (save/load, backup)
 │
 ├── requirements.txt                    Dependencies: pytest, flake8, requests, flask
 └── .gitignore                          ไฟล์ที่ไม่ track: pets.json, pets_backup.json, __pycache__ ฯลฯ
@@ -94,7 +93,7 @@ script_project/
         └── PEER_EVALUATION.md
 ```
 
-> รายละเอียดผลงานแต่ละ Sprint อยู่ในโฟลเดอร์ [`sprints/`](./sprints) — คลิกดูรอบที่สนใจได้โดยตรง
+> รายละเอียดผลงานแต่ละ Sprint อยู่ในโฟลเดอร์ [`sprints/`](./sprints)
 
 ---
 
