@@ -6,9 +6,9 @@
 ## บทบาทในทีม (Sprint นี้)
 | สมาชิก | บทบาท | หน้าที่รับผิดชอบ |
 |---|---|---|
-| พรีม | Debugger / QA | *(รอระบุรายละเอียด — อัปเดตตอนแก้ไข Sprint 2)* |
-| เอม | Planner | *(รอระบุรายละเอียด — อัปเดตตอนแก้ไข Sprint 2)* |
-| เชอร์ | Coder | *(รอระบุรายละเอียด — อัปเดตตอนแก้ไข Sprint 2)* |
+| พรีม | Debugger / QA | *ทดสอบ Multi-Pet, JSON Persistence, switchpet, Interaction History และ Auto-Save & Backup ตรวจสอบ Edge Cases และ Exception Handling พร้อมจัดทำ QA Test Log และตรวจสอบความเสถียรของระบบใน CLI Loop* |
+| เอม | Planner | *วางแผนและออกแบบสถาปัตยกรรมระบบ Multi-Pet และ Data Persistence กำหนดโครงสร้าง PetManager และรูปแบบข้อมูล JSON (to_dict() / from_dict()), ออกแบบระบบ Interaction History และกำหนด Definition of Done (DoD)* |
+| เชอร์ | Coder | *พัฒนา Business Logic และ Data Access ใน src/pet_manager.py สำหรับจัดการสัตว์เลี้ยงหลายตัว (active_pet), โหลด/บันทึกข้อมูล JSON, ระบบ Auto-Save & Backup และพัฒนาการค้นหา กรอง และเรียงลำดับข้อมูล Interaction History ใน web/history.py* |
 
 ## เป้าหมายและขอบเขต (Scope & DoD)
 - [ ] เพิ่มความสามารถในการจัดการสัตว์เลี้ยงหลายตัว (Multi-Pet Management)
