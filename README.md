@@ -35,41 +35,62 @@
 
 ---
 
-## 📁 โครงสร้างโปรเจกต์ (Project Structure)
+## 🧩 โครงสร้างโค้ด (Source Code)
 
 ```text
-virtual-pet-cli/
+script_project/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml          # GitHub Actions CI/CD Pipeline
-├── src/
-│   ├── __init__.py
-│   ├── cli.py             # Presentation Layer (CLI & UI)
-│   ├── pet.py             # Business Logic Layer (OOP Classes & API)
-│   └── main.py            # Entry Point & Data Access Layer
-├── tests/
-│   ├── __init__.py
-│   └── test_cli.py        # Automated Unit Tests
-├── .gitignore             # Git Ignore File
-├── ALL_SPRINTS.md         # สรุปผลการดำเนินงานและ QA Reports แต่ละ Sprint
-├── pet_state.json         # ไฟล์บันทึกสถานะสัตว์เลี้ยง (Auto-generated)
-├── README.md              # เอกสารอธิบายโปรเจกต์
-└── requirements.txt       # Dependencies (requests, pytest, flake8)
+│       └── ci.yml                     GitHub Actions: flake8 + pytest อัตโนมัติทุก push/PR
+│
+├── src/                                Presentation + Business Logic Layer
+│   ├── main.py                         Entry point — game loop, เมนูคำสั่งหลัก
+│   ├── cli.py                          Presentation Layer — แสดงผล UI, รับ input
+│   ├── pet.py                          Business Logic — Pet, MoodTracker, Interaction (Cat Facts API)
+│   └── pet_manager.py                  Business Logic — จัดการสัตว์เลี้ยงหลายตัว, save/load + backup
+│
+├── web/                                Data Access + Web API Layer
+│   ├── history.py                      บันทึก/ค้นหา/กรอง/เรียงลำดับ ประวัติการโต้ตอบ (JSON)
+│   └── app.py                          Flask API (`/api/interact`, `/api/history`) — เตรียมไว้สำหรับ Sprint 3
+│
+├── tests/                              Automated Unit Tests
+│   ├── test_cli.py                     ทดสอบ MoodTracker, Pet (decay, feed)
+│   ├── test_history.py                 ทดสอบ search/filter/sort ของ web/history.py
+│   ├── test_pet_manager.py             ทดสอบ PetManager (save/load, backup)
+│   └── test_interaction.py             ทดสอบ Cat Facts API (mock)
+│
+├── requirements.txt                    Dependencies: pytest, flake8, requests, flask
+└── .gitignore                          ไฟล์ที่ไม่ track: pet_state.json, pets.json, __pycache__ ฯลฯ
 ```
+
+| ไฟล์/โฟลเดอร์ | Layer | หน้าที่ |
+|---|---|---|
+| `src/cli.py` | Presentation | แสดงหน้าจอ, เมนู, รับ+ตรวจสอบ input |
+| `src/pet.py` | Business Logic | สถานะสัตว์เลี้ยง, คำนวณ decay ตามเวลา, ประเมินอารมณ์ |
+| `src/pet_manager.py` | Business Logic | จัดการหลายสัตว์เลี้ยง, persistence หลัก |
+| `web/history.py` | Data Access | log กิจกรรม + search/filter/sort |
+| `web/app.py` | Web API | Flask endpoints สำหรับเชื่อมกับหน้าเว็บ |
+| `tests/` | QA | Unit tests รันผ่าน CI ทุกครั้งที่ push |
 ---
 
 ## 🚀 การรันโปรแกรม (Execution)
-
+ 
 1. **เปิด Terminal / Command Prompt** และเข้าสู่โฟลเดอร์ Root ของโปรเจกต์
-2. **รันไฟล์ Main Script:**
-   ```bash
+2. **ติดตั้ง Dependencies:**
+```bash
+   pip install -r requirements.txt
+```
+3. **รันไฟล์ Main Script:**
+```bash
    python -m src.main
-
+```
+ 
 ---
+ 
 ## 👥 สมาชิกในทีม (Team Members)
-
-| รหัสนักศึกษา | ชื่อ-นามสกุล |ชื่อเล่น |
-| :---: | :--- |:--- |
+ 
+| รหัสนักศึกษา | ชื่อ-นามสกุล | ชื่อเล่น |
+| :---: | :--- | :--- |
 | **673380594-9** | นางสาวพรีมภัทร ภาวัฒนวคุณ | พรีม |
 | **673380596-5** | นางสาวพิชยา สิทธิพันธ์ | เชอร์ |
 | **673380598-1** | นางสาวมุกดา บุญประจันทร์ | เอม |
