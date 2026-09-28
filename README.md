@@ -56,6 +56,26 @@
 
 ---
 
+## 🛠️ เทคโนโลยีที่ใช้ (Tech Stack)
+
+**ภาษา:** Python 3.10 ขึ้นไป
+
+**ไลบรารีมาตรฐาน**
+* `json`, `os`, `shutil` — อ่าน เขียน และสำรองไฟล์
+* `threading` — ล็อกไม่ให้คำสั่งทำงานทับกัน
+* `datetime`, `re` — จัดการเวลาและตรวจรูปแบบชื่อ
+
+**ไลบรารีภายนอก** (ติดตั้งจาก `requirements.txt`)
+* `Flask` — หน้าเว็บและ REST API
+* `requests` — เรียก Cat Facts API
+* `pytest` — ทดสอบอัตโนมัติ
+* `flake8` — ตรวจรูปแบบโค้ดตาม PEP8
+
+**Design Patterns**
+* **Service Layer** — `PetService` เป็นทางเข้าเดียวของ CLI และเว็บ
+* **Repository** — `JsonStore` แยกการอ่านเขียนไฟล์ออกจาก Business Logic
+* **Decorator** — `@synchronized` ใส่ล็อกให้ทุกเมธอดของ `PetService`
+* **Exception Hierarchy** — ข้อผิดพลาดทุกแบบสืบทอดจาก `PetError`
 ## 🧩 โครงสร้างโค้ด (Source Code)
 
 ```text
