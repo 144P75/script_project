@@ -180,14 +180,30 @@ classDiagram
 
 ## 7. Definition of Done
 
-DoD ของ Sprint 2 อยู่ใน `sprints/sprint2/REPORT.md`
+รายละเอียดเต็มของแต่ละ Sprint อยู่ใน `sprints/sprintX/REPORT.md`
 
-**Sprint 3 — Full-Stack**
+**Sprint 1 — Front-End App Dev**
+- [x] โครงสร้าง Modular: `src/cli.py`, `src/pet.py`, `src/main.py`
+- [x] Class ตามหลัก OOP: `Pet`, `MoodTracker`, `Interaction`
+- [x] แสดงแบนเนอร์ต้อนรับ เมนู และสถานะสัตว์เลี้ยงใน CLI
+- [x] รับคำสั่งได้ไม่ว่าพิมพ์เล็กหรือใหญ่ (`.strip().lower()`)
+- [x] บันทึกและโหลดสถานะผ่าน `pet_state.json`
+- [x] Input ผิด, Ctrl+C, ไม่พบไฟล์ → โปรแกรมไม่ Crash
+- [x] CI ด้วย GitHub Actions (pytest + flake8)
+
+**Sprint 2 — Back-End App Dev**
+- [x] โหลดข้อมูลจาก JSON และจำตัวที่เลี้ยงล่าสุดได้
+- [x] ชื่อไม่มีอยู่ → `PetNotFoundError`, ชื่อผิดรูปแบบ → `InvalidPetNameError`, ชื่อซ้ำ (ไม่สนตัวพิมพ์) → `DuplicatePetError` โดยโปรแกรมไม่พัง
+- [x] ไฟล์หาย → เริ่มใหม่, ไฟล์เสีย → กู้จาก backup และซ่อมไฟล์หลัก, ข้อมูลบางตัวเสีย → ข้ามและแจ้งเตือน
+- [x] ทุก Interaction ถูกบันทึกพร้อมชื่อสัตว์เลี้ยง ค้นหา/กรอง/เรียงได้หลายคุณลักษณะ
+- [x] ค้นหาคำว่างคืนทั้งหมด, เรียงด้วยคีย์ที่ไม่รองรับ → แจ้งตัวเลือกที่ใช้ได้
+- [x] ค้นหา + กรอง + เรียง ข้อมูล 1,000 รายการเสร็จภายใน 50 ms
+
+**Sprint 3 — Full-Stack App Dev**
 - [x] CLI และเว็บเรียก CRUD ของสัตว์เลี้ยงได้ครบ (เพิ่ม ดู เปลี่ยนชื่อ ลบ สลับ)
 - [x] ทั้งสองหน้าเรียกผ่าน `PetService` ตัวเดียว ข้อมูลตรงกันทันที (ทดสอบใน `test_cli_and_web_stay_in_sync`)
-- [x] ลบ/เปลี่ยนชื่อ/สลับไปยังตัวที่ไม่มีอยู่ → `PetNotFoundError` แจ้งผู้ใช้โดยโปรแกรมไม่พัง
-- [x] ไฟล์หาย → เริ่มใหม่, ไฟล์เสีย → กู้จาก backup และซ่อมไฟล์หลัก, ข้อมูลบางตัวเสีย → ข้ามและแจ้งเตือน
-- [x] ค้นหาคำว่างคืนทั้งหมด, เรียงตามหลายคีย์ได้, คีย์ผิดแจ้งเตือน
+- [x] ทุก error จากเว็บตอบเป็น JSON พร้อม HTTP status ที่ถูกต้อง (400 / 404 / 409)
+- [x] ลบตัวสุดท้ายแล้วไม่พัง ระบบพาไปสร้างตัวใหม่
 - [x] หลาย request พร้อมกันไม่ทำให้ข้อมูลหาย
 
 **Final Sprint — DevOps & AI** (แผน รายละเอียดใน `sprints/sprint-final/REPORT.md`)
@@ -195,19 +211,24 @@ DoD ของ Sprint 2 อยู่ใน `sprints/sprint2/REPORT.md`
 - [ ] ไม่มี API key หรือ API ล่ม → ตอบแบบออฟไลน์ ไม่ crash
 - [ ] GitHub Actions รัน flake8 แบบเต็มและ pytest บน Python 3.10 และ 3.12
 
-## 8. ประวัติการ Refactor
-| Sprint | ปัญหา | วิธีแก้ |
-|---|---|---|
-| 2 | เซฟข้อมูลซ้อนกัน 2 ระบบ (`pet_state.json` กับ `pets.json`) | รวมให้เหลือ `PetManager` + `pets.json` |
-| 2 | `src/interaction.py` (Dog API) ไม่ได้ถูกเรียกใช้ | ลบออก |
-| 2 | decay ปัดเศษวินาทีทิ้ง กดคำสั่งถี่กว่า 10 วินาทีสถานะไม่ลด | เลื่อน `last_updated` ตามหน่วยที่ใช้จริง |
-| 2 | เมธอดคืนข้อความผิดพลาดเป็น string แยกไม่ออกว่าสำเร็จหรือไม่ | เปลี่ยนเป็น Custom Exceptions |
-| 2 | ไฟล์ backup ถูกเขียนพร้อมไฟล์หลักเสมอ จึงเหมือนกันทุกครั้ง | backup เก็บเวอร์ชันก่อนหน้า + เขียนแบบ atomic |
-| 2 | `web/history.py` เป็น Data/Logic แต่อยู่ในโฟลเดอร์ web | ย้ายเป็น `src/history.py` + `src/storage.py` |
-| 2 | Flask ไม่อยู่ใน `requirements.txt` | เพิ่ม |
-| 3 | `main.py` มี if/elif ที่เรียก history + save ซ้ำทุกคำสั่ง และเว็บจะต้องเขียนซ้ำอีกชุด | แยก `src/service.py` ให้ CLI และเว็บเรียกร่วมกัน |
-| 3 | เว็บส่ง request พร้อมกันแล้วข้อมูลหาย (last write wins) | ใส่ lock ใน `PetService` |
-| 3 | error บางกรณีตอบเป็นหน้า HTML หน้าเว็บอ่านไม่ได้ | error handler ตอบ JSON ทุกกรณี |
+## 8. ปัญหาทางเทคนิคและการ Refactor
+
+| Sprint | ประเภท | ปัญหา | วิธีแก้ |
+|---|---|---|---|
+| 1 | Bug fix | กด Ctrl+C ระหว่างรอ input แล้วเกิด `KeyboardInterrupt` โปรแกรมหลุด | ครอบ `try-except (KeyboardInterrupt, EOFError)` ให้ปิดโปรแกรมอย่างนุ่มนวล |
+| 2 | Refactor | เซฟข้อมูลซ้อนกัน 2 ระบบ (`pet_state.json` กับ `pets.json`) | รวมให้เหลือ `PetManager` + `pets.json` |
+| 2 | Refactor | `src/interaction.py` (Dog API) ไม่ได้ถูกเรียกใช้ | ลบออก |
+| 2 | Refactor | เมธอดคืนข้อความผิดพลาดเป็น string แยกไม่ออกว่าสำเร็จหรือไม่ | เปลี่ยนเป็น Custom Exceptions |
+| 2 | Refactor | `web/history.py` เป็น Data/Logic แต่อยู่ในโฟลเดอร์ web | ย้ายเป็น `src/history.py` + `src/storage.py` |
+| 2 | Bug fix | decay ปัดเศษวินาทีทิ้ง กดคำสั่งถี่กว่า 10 วินาทีสถานะไม่ลด | เลื่อน `last_updated` ตามหน่วยที่ใช้จริง |
+| 2 | Bug fix | ไฟล์ backup ถูกเขียนพร้อมไฟล์หลักเสมอ จึงเหมือนกันทุกครั้ง | backup เก็บเวอร์ชันก่อนหน้า + เขียนแบบ atomic |
+| 2 | Bug fix | Flask ไม่อยู่ใน `requirements.txt` ติดตั้งใหม่แล้วรันเว็บไม่ได้ | เพิ่มใน `requirements.txt` |
+| 3 | Refactor | `main.py` มี if/elif ที่เรียก history + save ซ้ำทุกคำสั่ง และเว็บจะต้องเขียนซ้ำอีกชุด | แยก `src/service.py` ให้ CLI และเว็บเรียกร่วมกัน |
+| 3 | Bug fix | เว็บส่ง request พร้อมกันแล้วข้อมูลหาย (last write wins) | ใส่ lock ใน `PetService` |
+| 3 | Bug fix | error บางกรณีตอบเป็นหน้า HTML หน้าเว็บอ่านไม่ได้ | error handler ตอบ JSON ทุกกรณี |
+| 3 | Bug fix | ปุ่มเปลี่ยนชื่อ/ลบบนเว็บไม่ทำงานในเบราว์เซอร์ที่บล็อกกล่อง `prompt()`/`confirm()` | แก้ชื่อในแถว และยืนยันการลบบนปุ่มเอง |
+
+Final Sprint: ยังไม่เริ่ม จะบันทึกเพิ่มเมื่อพัฒนา
 
 ## 9. ทางเลือกที่พิจารณา (Design Decisions)
 | เรื่อง | เลือก | ทางเลือกอื่น | เหตุผล |
