@@ -133,7 +133,7 @@ script_project/
 ---
 
 ## 🚀 การรันโปรแกรม (Execution)
-
+   ต้องใช้ Python 3.10 ขึ้นไป
 1. **เปิด Terminal / Command Prompt** และเข้าสู่โฟลเดอร์ Root ของโปรเจกต์
 2. **ติดตั้ง Dependencies:**
 ```bash
