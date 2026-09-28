@@ -1,6 +1,6 @@
 # Sprint 3: Full-Stack App Dev
 
-**ช่วงเวลา:** สัปดาห์ที่ 14 (นำเสนอ: 29-30 ก.ย. 2569 | ส่งงาน: 2 ต.ค. 2569 — ส่งรวมกับ Sprint 2)
+**ช่วงเวลา:** สัปดาห์ที่ 14 (นำเสนอ: 29-30 ก.ย. 2569 รวมกับ Sprint 2)
 **จุดเน้น:** เชื่อม Front-End (CLI + Web) เข้ากับ Back-End จาก Sprint 2, State Management, Data Consistency และ Edge Cases
 
 ## บทบาทในทีม (Sprint นี้)
