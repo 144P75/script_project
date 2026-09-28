@@ -1,107 +1,156 @@
+"""Business Logic Layer: Domain model ของสัตว์เลี้ยง"""
+import random
 import time
+
 import requests
+
+STAT_MIN, STAT_MAX = 0, 100
+DECAY_INTERVAL = 10  # วินาทีต่อ 1 หน่วย decay
+DECAY_PER_UNIT = {"hunger": 5, "energy": -3, "happiness": -2}
+
+OFFLINE_FACTS = [
+    "Cats sleep for around 12 to 16 hours a day.",
+    "A group of cats is called a clowder.",
+    "Cats have five toes on their front paws but only four on the back paws.",
+]
+
+
+def clamp(value):
+    """บังคับค่าสถานะให้อยู่ระหว่าง 0-100"""
+    return max(STAT_MIN, min(STAT_MAX, int(value)))
 
 
 class MoodTracker:
-    """จัดการอารมณ์และคำนวณ Decay over time ของสัตว์เลี้ยง"""
+    """เก็บค่าสถานะ คำนวณ decay และประเมินอารมณ์"""
 
-    def __init__(self, hunger: int = 50, energy: int = 50, happiness: int = 50):
-        self.hunger = min(max(hunger, 0), 100)
-        self.energy = min(max(energy, 0), 100)
-        self.happiness = min(max(happiness, 0), 100)
+    MOODS = {
+        "hungry": "หิวมากๆ 😿",
+        "sleepy": "ง่วงนอนสุดๆ 💤",
+        "happy": "มีความสุขมาก! 😸",
+        "ok": "อารมณ์ดี 😺",
+    }
 
-    def update_decay(self, time_passed_seconds: float):
-        """คำนวณค่าสเตตัสที่ลดลงตามเวลาจริง"""
-        decay_units = int(time_passed_seconds // 10)  
-        if decay_units > 0:
-            self.hunger = min(100, self.hunger + (decay_units * 5))
-            self.energy = max(0, self.energy - (decay_units * 3))
-            self.happiness = max(0, self.happiness - (decay_units * 2))
+    def __init__(self, hunger=50, energy=50, happiness=50):
+        self.hunger = clamp(hunger)
+        self.energy = clamp(energy)
+        self.happiness = clamp(happiness)
 
-    def get_mood(self) -> str:
+    def change(self, hunger=0, energy=0, happiness=0):
+        """ปรับค่าสถานะแบบสัมพัทธ์ โดยไม่ให้หลุดช่วง 0-100"""
+        self.hunger = clamp(self.hunger + hunger)
+        self.energy = clamp(self.energy + energy)
+        self.happiness = clamp(self.happiness + happiness)
+
+    def decay(self, units):
+        """ลดสถานะตามจำนวนหน่วยเวลาที่ผ่านไป"""
+        if units > 0:
+            self.change(**{k: v * units for k, v in DECAY_PER_UNIT.items()})
+
+    def update_decay(self, time_passed_seconds):
+        """คำนวณ decay จากจำนวนวินาที คืนจำนวนหน่วยที่ใช้ไป"""
+        units = int(max(0, time_passed_seconds) // DECAY_INTERVAL)
+        self.decay(units)
+        return units
+
+    def get_mood_key(self):
         if self.hunger > 80:
-            return "หิวมากๆ 😿"
-        elif self.energy < 20:
-            return "ง่วงนอนสุดๆ 💤"
-        elif self.happiness > 70:
-            return "มีความสุขมาก! 😸"
-        return "อารมณ์ดี 😺"
+            return "hungry"
+        if self.energy < 20:
+            return "sleepy"
+        if self.happiness > 70:
+            return "happy"
+        return "ok"
+
+    def get_mood(self):
+        return self.MOODS[self.get_mood_key()]
 
 
 class Interaction:
-    """จัดการ External API (Cat Facts API)"""
+    """เชื่อมต่อ External API (Cat Facts API)"""
+
+    URL = "https://catfact.ninja/fact"
 
     @staticmethod
-    def fetch_cat_fact() -> str:
+    def fetch_cat_fact():
+        """คืนเกร็ดความรู้แมว ถ้า API ใช้ไม่ได้จะใช้ข้อมูลสำรองในเครื่อง"""
         try:
-            response = requests.get("https://catfact.ninja/fact", timeout=5)
-            if response.status_code == 200:
-                return f"🐱 เกร็ดความรู้แมว: {response.json().get('fact')}"
-            return "ไม่สามารถดึงเกร็ดความรู้แมวได้ในขณะนี้"
-        except Exception:
-            return "ไม่สามารถเชื่อมต่อ API ได้ (ตรวจสอบอินเทอร์เน็ต)"
+            response = requests.get(Interaction.URL, timeout=5)
+            response.raise_for_status()
+            fact = response.json().get("fact")
+            if fact:
+                return f"🐱 เกร็ดความรู้แมว: {fact}"
+        except (requests.RequestException, ValueError):
+            pass
+        return f"🐱 เกร็ดความรู้แมว (ออฟไลน์): {random.choice(OFFLINE_FACTS)}"
 
 
 class Pet:
-    """Class หลักของสัตว์เลี้ยง รวมระบบ MoodTracker และ Interaction"""
+    """สัตว์เลี้ยง 1 ตัว รวม MoodTracker และ Interaction"""
 
-    def __init__(self, name: str, hunger: int = 50, energy: int = 50, happiness: int = 50, last_updated: float = None):
+    def __init__(self, name, hunger=50, energy=50, happiness=50, last_updated=None, created_at=None):
+        now = time.time()
         self.name = name
         self.mood_tracker = MoodTracker(hunger, energy, happiness)
-        self.last_updated = last_updated or time.time()
+        self.last_updated = float(last_updated) if last_updated is not None else now
+        self.created_at = float(created_at) if created_at is not None else now
 
-    def apply_time_decay(self):
-        now = time.time()
+    def apply_time_decay(self, now=None):
+        """ลดสถานะตามเวลาจริง เศษวินาทีที่ยังไม่ครบหน่วยจะถูกเก็บไว้คิดรอบถัดไป"""
+        now = time.time() if now is None else now
         elapsed = now - self.last_updated
-        self.mood_tracker.update_decay(elapsed)
-        self.last_updated = now
+        if elapsed < 0:  # นาฬิกาเครื่องถูกย้อน
+            self.last_updated = now
+            return
+        units = self.mood_tracker.update_decay(elapsed)
+        self.last_updated += units * DECAY_INTERVAL
 
-    def feed(self) -> str:
+    def feed(self):
         self.apply_time_decay()
         if self.mood_tracker.energy <= 0:
             return f"{self.name} เหนื่อยเกินกว่าจะกิน! ต้องให้นอนพักก่อน"
-        self.mood_tracker.hunger = max(0, self.mood_tracker.hunger - 30)
-        self.mood_tracker.energy = min(100, self.mood_tracker.energy + 10)
-        return f"คุณให้อาหาร {self.name} แล้ว! ความหิวยานลง"
+        if self.mood_tracker.hunger <= 10:
+            return f"{self.name} ยังอิ่มอยู่เลย ไม่อยากกินตอนนี้"
+        self.mood_tracker.change(hunger=-30, energy=10)
+        return f"คุณให้อาหาร {self.name} แล้ว! ความหิวลดลง"
 
-    def play(self) -> str:
+    def play(self):
         self.apply_time_decay()
         if self.mood_tracker.hunger >= 90:
             return f"{self.name} หิวเกินกว่าจะเล่น!"
         if self.mood_tracker.energy < 20:
             return f"{self.name} เหนื่อยเกินกว่าจะเล่น!"
-        self.mood_tracker.happiness = min(100, self.mood_tracker.happiness + 25)
-        self.mood_tracker.hunger = min(100, self.mood_tracker.hunger + 15)
-        self.mood_tracker.energy = max(0, self.mood_tracker.energy - 20)
+        self.mood_tracker.change(hunger=15, energy=-20, happiness=25)
         return f"คุณเล่นกับ {self.name} สนุกมากๆ!"
 
-    def sleep(self) -> str:
+    def sleep(self):
         self.apply_time_decay()
-        self.mood_tracker.energy = 100
-        self.mood_tracker.hunger = min(100, self.mood_tracker.hunger + 20)
+        self.mood_tracker.energy = STAT_MAX
+        self.mood_tracker.change(hunger=20)
         return f"{self.name} ได้นอนหลับเต็มอิ่มและฟื้นฟูพลังงานเต็มที่!"
 
-    def interact_api(self) -> str:
+    def interact_api(self):
         self.apply_time_decay()
-        self.mood_tracker.happiness = min(100, self.mood_tracker.happiness + 10)
-        fact = Interaction.fetch_cat_fact()
-        return f"คุณใช้เวลาร่วมกับ {self.name}!\n> {fact}"
+        self.mood_tracker.change(happiness=10)
+        return f"คุณใช้เวลาร่วมกับ {self.name}!\n> {Interaction.fetch_cat_fact()}"
 
-    def to_dict(self) -> dict:
+    def to_dict(self):
         return {
             "name": self.name,
             "hunger": self.mood_tracker.hunger,
             "energy": self.mood_tracker.energy,
             "happiness": self.mood_tracker.happiness,
-            "last_updated": self.last_updated
+            "last_updated": self.last_updated,
+            "created_at": self.created_at,
         }
 
     @classmethod
-    def from_dict(cls, data: dict):
+    def from_dict(cls, data):
+        """สร้าง Pet จาก dict — raise ValueError/TypeError ถ้าข้อมูลผิดรูปแบบ"""
         return cls(
-            name=data.get("name", "Buddy"),
-            hunger=data.get("hunger", 50),
-            energy=data.get("energy", 50),
-            happiness=data.get("happiness", 50),
-            last_updated=data.get("last_updated", time.time())
+            name=str(data["name"]),
+            hunger=int(data.get("hunger", 50)),
+            energy=int(data.get("energy", 50)),
+            happiness=int(data.get("happiness", 50)),
+            last_updated=data.get("last_updated"),
+            created_at=data.get("created_at"),
         )

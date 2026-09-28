@@ -1,81 +1,240 @@
-# PLAN.md — Virtual Pet Companion (CLI)
+# PLAN.md — Virtual Pet Companion
 
-เอกสารสถาปัตยกรรมรวมของโปรเจกต์ **Virtual Pet Companion (CLI)** — รายละเอียดการดำเนินงาน
-ผลการทดสอบ และ retrospective ของแต่ละ Sprint อยู่ใน `sprints/sprintX/` แทน ไฟล์นี้เก็บเฉพาะ
-ภาพรวมสถาปัตยกรรมที่ใช้ร่วมกันทุก Sprint
+เอกสารสถาปัตยกรรมรวมของโปรเจกต์ ใช้ร่วมทุก Sprint
+รายละเอียดการดำเนินงาน ผลทดสอบ และ retrospective ของแต่ละรอบอยู่ใน `sprints/`
 
-## สมาชิกในทีม (Team Members)
+## สมาชิกในทีม
 | รหัสนักศึกษา | ชื่อ-นามสกุล | ชื่อเล่น |
 | :---: | :--- | :--- |
 | 673380594-9 | นางสาวพรีมภัทร ภาวัฒนวคุณ | พรีม |
 | 673380596-5 | นางสาวพิชยา สิทธิพันธ์ | เชอร์ |
 | 673380598-1 | นางสาวมุกดา บุญประจันทร์ | เอม |
 
-## ตารางบทบาทตาม Sprint
-| Sprint | รายละเอียด |
+## 1. ปัญหาและคุณค่าของระบบ
+ผู้ใช้ต้องการเกมเลี้ยงสัตว์ที่ "มีชีวิต" คือสถานะเปลี่ยนไปตามเวลาจริงแม้ปิดโปรแกรม
+เล่นต่อจากเดิมได้ มีสัตว์เลี้ยงหลายตัว และดูย้อนหลังได้ว่าทำอะไรไปบ้าง
+ระบบนี้เล่นได้ทั้งทาง CLI และหน้าเว็บ โดยใช้ข้อมูลชุดเดียวกัน
+
+## 2. สถาปัตยกรรม (Separation of Concerns)
+
+```text
+ Presentation Layer   src/cli.py + src/main.py (CLI)      web/app.py + web/static/index.html (Web)
+                                 \                                  /
+ Service Layer                    src/service.py  (PetService — จุดเดียวที่ UI เรียกใช้)
+                                 /            |               \
+ Business Logic      src/pet.py        src/pet_manager.py     src/history.py (search/filter/sort)
+                                              |                                     |
+ Data Access                        src/storage.py (JsonStore: atomic write + backup + recovery)
+                                              |
+ Files                          pets.json / pets_backup.json      interaction_history.json
+```
+
+หลักการสำคัญ
+- **UI ไม่แตะไฟล์หรือ Pet โดยตรง** ทุกคำสั่งผ่าน `PetService` ทำให้ CLI กับเว็บทำงานเหมือนกันทุกประการ
+- **State Consistency** ทุกเมธอดของ `PetService` จะ reload จากไฟล์ก่อน และบันทึกทันทีหลังเปลี่ยนข้อมูล
+  และมี lock กันหลาย request เขียนทับกัน
+- **Custom Exceptions** ทุก error ของระบบสืบทอดจาก `PetError` UI ดักที่เดียว CLI แสดงข้อความ เว็บแปลงเป็น HTTP status
+
+## 3. UML Class Diagram
+
+```mermaid
+classDiagram
+    class MoodTracker {
+        +int hunger
+        +int energy
+        +int happiness
+        +change(hunger, energy, happiness)
+        +decay(units)
+        +update_decay(seconds) int
+        +get_mood_key() str
+        +get_mood() str
+    }
+    class Interaction {
+        +fetch_cat_fact()$ str
+    }
+    class Pet {
+        +str name
+        +float last_updated
+        +float created_at
+        +apply_time_decay(now)
+        +feed() str
+        +play() str
+        +sleep() str
+        +interact_api() str
+        +to_dict() dict
+        +from_dict(data)$ Pet
+    }
+    class JsonStore {
+        +path
+        +backup_path
+        +load() (data, warning)
+        +save(data)
+    }
+    class PetManager {
+        +dict pets
+        +str active_name
+        +active_pet Pet
+        +reload()
+        +save()
+        +add_pet(name) Pet
+        +list_pets(sort_by, order) list
+        +switch_pet(name) Pet
+        +rename_pet(old, new) Pet
+        +delete_pet(name) Pet
+        +validate_name(name)$ str
+    }
+    class InteractionHistory {
+        +load() list
+        +add(source, kind, content, pet) dict
+        +query(keyword, source, kind, pet, sort_by, order) list
+        +distinct(field) list
+    }
+    class PetService {
+        +status() dict
+        +perform(action) dict
+        +create_pet(name) dict
+        +list_pets(sort_by, order) list
+        +select_pet(name) dict
+        +rename_pet(old, new) dict
+        +delete_pet(name) dict
+        +query_history(...) list
+    }
+    class CLIHandler
+    class FlaskApp
+    class PetError {
+        +message
+        +status_code
+    }
+
+    Pet *-- MoodTracker
+    Pet ..> Interaction
+    PetManager o-- Pet
+    PetManager --> JsonStore
+    InteractionHistory --> JsonStore
+    PetService --> PetManager
+    PetService --> InteractionHistory
+    CLIHandler ..> PetService
+    FlaskApp ..> PetService
+    PetError <|-- InvalidInputError
+    InvalidInputError <|-- InvalidPetNameError
+    InvalidInputError <|-- InvalidActionError
+    PetError <|-- PetNotFoundError
+    PetError <|-- DuplicatePetError
+    PetError <|-- NoActivePetError
+```
+
+## 4. Data Schema
+
+**`pets.json`** (schema version 2 — ยังอ่านไฟล์รูปแบบเดิม (v1) ได้)
+```json
+{
+  "version": 2,
+  "active": "Milo",
+  "pets": {
+    "Milo": {
+      "name": "Milo",
+      "hunger": 35,
+      "energy": 80,
+      "happiness": 70,
+      "last_updated": 1790000000.0,
+      "created_at": 1789990000.0
+    }
+  }
+}
+```
+- `hunger`, `energy`, `happiness` เป็นจำนวนเต็ม 0–100 (ค่าที่เกินจะถูกบังคับเข้าช่วง)
+- ชื่อสัตว์เลี้ยง 1–20 ตัวอักษร ใช้ได้เฉพาะไทย/อังกฤษ ตัวเลข ช่องว่าง `-` `_` และห้ามซ้ำ (ไม่สนตัวพิมพ์)
+
+**`interaction_history.json`** — list ของ entry (เก็บล่าสุดไม่เกิน 5,000 รายการ)
+```json
+{"timestamp": "2026-09-28T14:05:11", "source": "User", "kind": "feed", "pet": "Milo", "content": "คุณให้อาหาร Milo แล้ว!"}
+```
+| field | ค่าที่เป็นไปได้ |
 |---|---|
-| Sprint 1 | ดู `sprints/sprint1/REPORT.md` |
-| Sprint 2 | ดู `sprints/sprint2/REPORT.md` |
-| Sprint 3 | ดู `sprints/sprint3/REPORT.md` |
-| Sprint Final | ดู `sprints/sprint-final/REPORT.md` |
+| source | `User`, `Cat Facts API`, `System` |
+| kind | `feed`, `play`, `sleep`, `fact`, `create`, `rename`, `delete` |
 
-## สถาปัตยกรรมระบบ (Architectural Scope)
-แบ่งหน้าที่การทำงานอย่างชัดเจน (Separation of Concerns) เป็น 3 ชั้นหลัก:
+## 5. กฎของเกม (Business Rules)
+| เหตุการณ์ | ผล |
+|---|---|
+| เวลาผ่านไปทุก 10 วินาที | หิว +5, พลังงาน −3, ความสุข −2 (เศษเวลาเก็บไว้คิดรอบถัดไป) |
+| feed | หิว −30, พลังงาน +10 · ปฏิเสธถ้าพลังงาน 0 หรือหิว ≤ 10 |
+| play | สุข +25, หิว +15, พลังงาน −20 · ปฏิเสธถ้าหิว ≥ 90 หรือพลังงาน < 20 |
+| sleep | พลังงาน = 100, หิว +20 |
+| fact | สุข +10 + เกร็ดความรู้จาก Cat Facts API (ออฟไลน์ใช้ข้อมูลสำรอง) |
+| อารมณ์ | หิว > 80 → หิวมาก, พลังงาน < 20 → ง่วง, สุข > 70 → มีความสุข, นอกนั้น → อารมณ์ดี |
 
-1. **Presentation Layer** (`src/cli.py`) — จัดการ CLI, แสดงผลหน้าจอ/เมนูหลัก, รับอินพุตพร้อมตรวจสอบความถูกต้อง
-2. **Business Logic Layer** (`src/pet.py`, `src/pet_manager.py`) — คำนวณสถานะสัตว์เลี้ยง (Hunger, Energy, Happiness), Time-based Decay, ประเมินอารมณ์ (`MoodTracker`), จัดการหลายสัตว์เลี้ยง (`PetManager`)
-3. **Data Access Layer** (`web/history.py`, ไฟล์ `.json`) — อ่าน/บันทึกสถานะสัตว์เลี้ยงและประวัติการโต้ตอบ
+## 6. Web API
+| Method | Path | ใช้ทำ | Error |
+|---|---|---|---|
+| GET | `/api/pet` | สถานะตัวที่เลี้ยงอยู่ | 409 ยังไม่มีสัตว์เลี้ยง |
+| POST | `/api/pet/actions/<action>` | feed / play / sleep / fact | 400 action ผิด |
+| GET | `/api/pets?sort_by=&order=` | รายการสัตว์เลี้ยง (Read) | 400 คีย์เรียงผิด |
+| POST | `/api/pets` | `{"name": "..."}` (Create) | 400 ชื่อผิด, 409 ชื่อซ้ำ |
+| PUT | `/api/pets/<name>` | `{"new_name": "..."}` (Update) | 404, 400, 409 |
+| DELETE | `/api/pets/<name>` | ลบ (Delete) | 404 |
+| POST | `/api/pets/<name>/select` | สลับตัวที่เลี้ยง | 404 |
+| GET | `/api/history?q=&source=&kind=&pet=&sort_by=&order=&limit=` | ค้นหา/กรอง/เรียง | 400 |
 
-## Class Diagram (สรุป)
-```
-Pet
- ├─ MoodTracker (hunger, energy, happiness, get_mood())
- └─ Interaction (fetch_cat_fact())
+ทุก error ตอบเป็น `{"error": "ข้อความภาษาไทย"}`
 
-PetManager
- ├─ pets: dict[str, Pet]
- ├─ active_pet: Pet
- ├─ add_pet(name), switch_pet(name)
- └─ save_pets() / load_pets()  → pets.json (+ pets_backup.json)
+## 7. Definition of Done
 
-history (web/history.py)
- ├─ add_entry(source, kind, content)
- ├─ search_history(data, query)
- ├─ filter_history(data, source, kind)
- └─ sort_history(data, order)
-```
+DoD ของ Sprint 2 อยู่ใน `sprints/sprint2/REPORT.md`
 
-## โครงสร้างโปรเจกต์ (Project Structure)
+**Sprint 3 — Full-Stack**
+- [x] CLI และเว็บเรียก CRUD ของสัตว์เลี้ยงได้ครบ (เพิ่ม ดู เปลี่ยนชื่อ ลบ สลับ)
+- [x] ทั้งสองหน้าเรียกผ่าน `PetService` ตัวเดียว ข้อมูลตรงกันทันที (ทดสอบใน `test_cli_and_web_stay_in_sync`)
+- [x] ลบ/เปลี่ยนชื่อ/สลับไปยังตัวที่ไม่มีอยู่ → `PetNotFoundError` แจ้งผู้ใช้โดยโปรแกรมไม่พัง
+- [x] ไฟล์หาย → เริ่มใหม่, ไฟล์เสีย → กู้จาก backup และซ่อมไฟล์หลัก, ข้อมูลบางตัวเสีย → ข้ามและแจ้งเตือน
+- [x] ค้นหาคำว่างคืนทั้งหมด, เรียงตามหลายคีย์ได้, คีย์ผิดแจ้งเตือน
+- [x] หลาย request พร้อมกันไม่ทำให้ข้อมูลหาย
+
+**Final Sprint — DevOps & AI** (แผน รายละเอียดใน `sprints/sprint-final/REPORT.md`)
+- [ ] คำสั่ง `talk` ใช้ได้ทั้ง CLI และเว็บ AI รู้สถานะของสัตว์เลี้ยง และบันทึกลงประวัติ
+- [ ] ไม่มี API key หรือ API ล่ม → ตอบแบบออฟไลน์ ไม่ crash
+- [ ] GitHub Actions รัน flake8 แบบเต็มและ pytest บน Python 3.10 และ 3.12
+
+## 8. ประวัติการ Refactor
+| Sprint | ปัญหา | วิธีแก้ |
+|---|---|---|
+| 2 | เซฟข้อมูลซ้อนกัน 2 ระบบ (`pet_state.json` กับ `pets.json`) | รวมให้เหลือ `PetManager` + `pets.json` |
+| 2 | `src/interaction.py` (Dog API) ไม่ได้ถูกเรียกใช้ | ลบออก |
+| 2 | decay ปัดเศษวินาทีทิ้ง กดคำสั่งถี่กว่า 10 วินาทีสถานะไม่ลด | เลื่อน `last_updated` ตามหน่วยที่ใช้จริง |
+| 2 | เมธอดคืนข้อความผิดพลาดเป็น string แยกไม่ออกว่าสำเร็จหรือไม่ | เปลี่ยนเป็น Custom Exceptions |
+| 2 | ไฟล์ backup ถูกเขียนพร้อมไฟล์หลักเสมอ จึงเหมือนกันทุกครั้ง | backup เก็บเวอร์ชันก่อนหน้า + เขียนแบบ atomic |
+| 2 | `web/history.py` เป็น Data/Logic แต่อยู่ในโฟลเดอร์ web | ย้ายเป็น `src/history.py` + `src/storage.py` |
+| 2 | Flask ไม่อยู่ใน `requirements.txt` | เพิ่ม |
+| 3 | `main.py` มี if/elif ที่เรียก history + save ซ้ำทุกคำสั่ง และเว็บจะต้องเขียนซ้ำอีกชุด | แยก `src/service.py` ให้ CLI และเว็บเรียกร่วมกัน |
+| 3 | เว็บส่ง request พร้อมกันแล้วข้อมูลหาย (last write wins) | ใส่ lock ใน `PetService` |
+| 3 | error บางกรณีตอบเป็นหน้า HTML หน้าเว็บอ่านไม่ได้ | error handler ตอบ JSON ทุกกรณี |
+
+## 9. ทางเลือกที่พิจารณา (Design Decisions)
+| เรื่อง | เลือก | ทางเลือกอื่น | เหตุผล |
+|---|---|---|---|
+| เก็บสัตว์เลี้ยงในหน่วยความจำ | `dict[name, Pet]` | `list[Pet]` | หาตามชื่อได้ O(1) และกันชื่อซ้ำง่าย |
+| ที่เก็บข้อมูล | JSON | SQLite, CSV | ข้อมูลเล็ก อ่านได้ด้วยตา ไม่ต้องติดตั้งเพิ่ม · ข้อเสีย: ต้องเขียนทั้งไฟล์ทุกครั้งและต้องจัดการเขียนพร้อมกันเอง |
+| การเชื่อม UI กับ Logic | Service Layer (Facade) | ให้ UI เรียก `PetManager` ตรงๆ | กันโค้ดซ้ำระหว่าง CLI กับเว็บ และคุม consistency ได้ที่เดียว |
+| การส่งต่อ error | Custom Exceptions | คืนค่า string/None | UI แยกกรณีได้ชัด เว็บแมปเป็น HTTP status ได้ |
+| การเรียงลำดับ | `sorted()` + key tuple หลายคีย์ | เขียน sort เอง | Timsort O(n log n) และ stable · 1,000 รายการใช้ ~1 ms |
+
+## 10. โครงสร้างโปรเจกต์
 ```text
 script_project/
-├── .github/workflows/ci.yml
+├── .github/workflows/ci.yml   flake8 + pytest
 ├── src/
-│   ├── cli.py             # Presentation Layer
-│   ├── pet.py              # Business Logic Layer (Pet, MoodTracker, Interaction)
-│   ├── pet_manager.py       # Business Logic Layer (multi-pet)
-│   └── main.py              # Entry point
+│   ├── main.py                CLI entry point + คำสั่ง
+│   ├── cli.py                 CLIHandler (แสดงผล/รับอินพุต)
+│   ├── service.py             PetService (Service Layer)
+│   ├── pet.py                 Pet, MoodTracker, Interaction
+│   ├── pet_manager.py         PetManager (CRUD สัตว์เลี้ยง)
+│   ├── history.py             InteractionHistory + search/filter/sort
+│   ├── storage.py             JsonStore
+│   └── exceptions.py          Custom Exceptions
 ├── web/
-│   ├── app.py               # Flask API (Sprint 3 integration target)
-│   └── history.py           # Data Access Layer (interaction log)
-├── tests/
-├── sprints/
-│   ├── sprint1/
-│   ├── sprint2/
-│   ├── sprint3/
-│   └── sprint-final/
-├── PLAN.md                  # ภาพรวมสถาปัตยกรรม
-├── README.md
-└── requirements.txt
-```
-
-## 🚀 การรันโปรแกรม (Execution)
- 
-1. **เปิด Terminal / Command Prompt** และเข้าสู่โฟลเดอร์ Root ของโปรเจกต์
-2. **ติดตั้ง Dependencies:**
-```bash
-   pip install -r requirements.txt
-```
-3. **รันไฟล์ Main Script:**
-```bash
-   python -m src.main
+│   ├── app.py                 Flask API
+│   └── static/index.html      หน้าเว็บเกม
+├── scripts/benchmark.py       วัดความเร็ว search/filter/sort
+├── tests/                     pytest
+├── sprints/                   รายงานแต่ละ Sprint
 ```

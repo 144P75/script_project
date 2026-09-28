@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Virtual Pet Companion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600&family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --page: #E8EEF1;
+    --surface: #FFFFFF;
+    --ink: #1D2B33;
+    --muted: #5B6B73;
+    --line: #C9D4D9;
+    --shell: #2D5D62;
+    --shell-dark: #1F4448;
+    --lcd: #C4D19C;
+    --lcd-ink: #28361C;
+    --lcd-dim: #A9B783;
+    --key: #F0A92E;
+    --key-dark: #B87A12;
+    --alert: #C4402F;
+    --ui: "IBM Plex Sans Thai", "Leelawadee UI", "Tahoma", sans-serif;
+    --pixel: "Pixelify Sans", "IBM Plex Sans Thai", "Tahoma", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page: #162024;
+      --surface: #1F2C31;
+      --ink: #DDE6E9;
+      --muted: #93A4AB;
+      --line: #33454C;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font: 16px/1.6 var(--ui);
+  }
+  button, input, select { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--key); outline-offset: 2px; }
+
+  .layout {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 32px 20px 48px;
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 40px;
+    align-items: start;
+  }
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; gap: 32px; }
+  }
+
+  /* ---------- Device ---------- */
+  .device {
+    position: sticky;
+    top: 24px;
+    background: var(--shell);
+    border-radius: 44px 44px 64px 64px;
+    padding: 28px 26px 30px;
+    box-shadow: inset 0 -6px 0 var(--shell-dark);
+    color: #EAF3F2;
+  }
+  @media (max-width: 860px) { .device { position: static; } }
+  .device-brand {
+    margin: 0 0 14px;
+    text-align: center;
+    font: 700 18px/1 var(--pixel);
+    letter-spacing: 0.04em;
+  }
+  .lcd {
+    background: var(--lcd);
+    color: var(--lcd-ink);
+    border-radius: 14px;
+    border: 6px solid var(--shell-dark);
+    padding: 14px 16px 16px;
+    min-height: 300px;
+  }
+  .lcd-top { display: flex; justify-content: space-between; gap: 8px; font-family: var(--pixel); }
+  .lcd-name { font-size: 22px; font-weight: 700; overflow-wrap: anywhere; }
+  .lcd-mood { font-size: 14px; text-align: right; font-family: var(--ui); }
+  .face {
+    font-size: 88px;
+    line-height: 1;
+    text-align: center;
+    margin: 14px 0 12px;
+    animation: bob 2.4s ease-in-out infinite;
+  }
+  .face.bump { animation: bump 0.4s ease-out; }
+  @keyframes bob { 50% { transform: translateY(-6px); } }
+  @keyframes bump { 40% { transform: scale(1.18); } }
+  @media (prefers-reduced-motion: reduce) { .face, .face.bump { animation: none; } }
+
+  .meter { display: grid; grid-template-columns: 76px 1fr 34px; align-items: center; gap: 8px; font-size: 14px; }
+  .meter + .meter { margin-top: 4px; }
+  .cells { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; }
+  .cells span { height: 12px; background: var(--lcd-dim); }
+  .cells span.on { background: var(--lcd-ink); }
+  .meter.low .cells span.on { animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0.35; } }
+  .meter-value { font-family: var(--pixel); text-align: right; }
+
+  .empty-lcd { text-align: center; padding-top: 70px; }
+  .empty-lcd p { margin: 0 0 6px; }
+
+  .bubble {
+    margin: 16px 0 0;
+    background: #F6FAEF;
+    color: var(--lcd-ink);
+    border-radius: 12px;
+    padding: 10px 14px;
+    min-height: 48px;
+    font-size: 15px;
+    white-space: pre-line;
+  }
+  .bubble small { display: block; color: #6B7A5A; margin-top: 2px; }
+
+  .keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px; }
+  .key {
+    border: 0;
+    border-radius: 50%;
+    aspect-ratio: 1;
+    background: var(--key);
+    color: #3A2604;
+    box-shadow: 0 5px 0 var(--key-dark);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    font-size: 26px;
+    transition: transform 0.06s, box-shadow 0.06s;
+  }
+  .key:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 1px 0 var(--key-dark); }
+  .key:disabled { opacity: 0.45; cursor: not-allowed; }
+  .key-labels { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 8px; text-align: center; font-size: 13px; }
+
+  /* ---------- Panel ---------- */
+  .panel section + section { margin-top: 44px; }
+  h1 { font-size: 30px; line-height: 1.25; margin: 0 0 6px; }
+  h2 { font-size: 21px; margin: 0 0 14px; }
+  .lede { color: var(--muted); margin: 0 0 32px; max-width: 60ch; }
+
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .field {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 8px 10px;
+    min-width: 0;
+  }
+  .btn {
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--page);
+    border-radius: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); font-weight: 400; }
+  .btn.danger { background: transparent; color: var(--alert); border-color: var(--line); font-weight: 400; }
+  .btn.danger.confirm { background: var(--alert); color: #fff; border-color: var(--alert); font-weight: 600; }
+  .rename-form { grid-column: 1 / -1; }
+  .rename-form .field { flex: 1; min-width: 140px; }
+
+  .pet-list { list-style: none; margin: 16px 0 0; padding: 0; border-top: 1px solid var(--line); }
+  .pet-list li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 16px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .pet-name { font-weight: 600; }
+  .pet-name .here { font-weight: 400; color: var(--muted); font-size: 14px; }
+  .pet-stats { color: var(--muted); font-size: 14px; }
+  .pet-actions { display: flex; gap: 6px; grid-row: span 2; }
+  .pet-actions .btn { padding: 6px 10px; font-size: 14px; }
+
+  .table-wrap { overflow-x: auto; margin-top: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; white-space: nowrap; }
+  td.time { white-space: nowrap; color: var(--muted); }
+  .count { color: var(--muted); font-size: 14px; margin-top: 10px; }
+  .empty { color: var(--muted); padding: 14px 0; }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    background: var(--alert);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 10px;
+    max-width: calc(100% - 32px);
+    display: none;
+  }
+  .toast.show { display: block; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<main class="layout">
+  <!-- ===== เครื่องเลี้ยงสัตว์ ===== -->
+  <div class="device" aria-label="เครื่องเลี้ยงสัตว์">
+    <p class="device-brand">PET&nbsp;COMPANION</p>
+    <div class="lcd" id="lcd" aria-live="polite"></div>
+    <div class="bubble" id="bubble">กดปุ่มด้านล่างเพื่อดูแลสัตว์เลี้ยง</div>
+
+    <div class="keys">
+      <button class="key" data-action="feed" aria-label="ให้อาหาร">🍖</button>
+      <button class="key" data-action="play" aria-label="เล่นด้วย">🎾</button>
+      <button class="key" data-action="sleep" aria-label="ให้นอน">🌙</button>
+      <button class="key" data-action="fact" aria-label="เกร็ดความรู้แมว">📖</button>
+    </div>
+    <div class="key-labels" aria-hidden="true">
+      <span>ให้อาหาร</span><span>เล่น</span><span>นอน</span><span>เกร็ดแมว</span>
+    </div>
+
+  </div>
+
+  <!-- ===== แผงจัดการ ===== -->
+  <div class="panel">
+    <h1>Virtual Pet Companion</h1>
+    <p class="lede">เลี้ยงแมวเสมือนที่หิว ง่วง และเหงาได้ตามเวลาจริง ข้อมูลทั้งหมดใช้ชุดเดียวกับเวอร์ชัน CLI</p>
+
+    <section aria-labelledby="pets-title">
+      <h2 id="pets-title">สัตว์เลี้ยงของฉัน</h2>
+      <form class="row" id="add-form">
+        <label class="sr-only" for="add-name">ชื่อสัตว์เลี้ยงใหม่</label>
+        <input class="field" id="add-name" maxlength="20" placeholder="ชื่อสัตว์เลี้ยงใหม่" autocomplete="off">
+        <button class="btn" type="submit">เพิ่มสัตว์เลี้ยง</button>
+        <label class="sr-only" for="pet-sort">เรียงสัตว์เลี้ยงตาม</label>
+        <select class="field" id="pet-sort">
+          <option value="name:asc">เรียงตามชื่อ</option>
+          <option value="hunger:desc">หิวมากที่สุดก่อน</option>
+          <option value="energy:asc">พลังงานน้อยที่สุดก่อน</option>
+          <option value="happiness:desc">มีความสุขที่สุดก่อน</option>
+          <option value="created:asc">เพิ่มก่อนอยู่ก่อน</option>
+        </select>
+      </form>
+      <ul class="pet-list" id="pet-list"></ul>
+    </section>
+
+    <section aria-labelledby="history-title">
+      <h2 id="history-title">ประวัติการโต้ตอบ</h2>
+      <div class="row">
+        <label class="sr-only" for="h-q">ค้นหา</label>
+        <input class="field" id="h-q" type="search" placeholder="ค้นหา เช่น sleep หรือชื่อสัตว์เลี้ยง">
+        <label class="sr-only" for="h-source">แหล่งที่มา</label>
+        <select class="field" id="h-source"><option value="">ทุกแหล่งที่มา</option></select>
+        <label class="sr-only" for="h-kind">ประเภท</label>
+        <select class="field" id="h-kind"><option value="">ทุกประเภท</option></select>
+        <label class="sr-only" for="h-pet">สัตว์เลี้ยง</label>
+        <select class="field" id="h-pet"><option value="">ทุกตัว</option></select>
+        <label class="sr-only" for="h-sort">เรียงตาม</label>
+        <select class="field" id="h-sort">
+          <option value="timestamp:desc">ใหม่สุดก่อน</option>
+          <option value="timestamp:asc">เก่าสุดก่อน</option>
+          <option value="kind,timestamp:asc">ตามประเภท แล้วตามเวลา</option>
+          <option value="pet,timestamp:asc">ตามสัตว์เลี้ยง แล้วตามเวลา</option>
+          <option value="source,kind:asc">ตามแหล่งที่มา แล้วตามประเภท</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>เวลา</th><th>สัตว์เลี้ยง</th><th>แหล่งที่มา</th><th>ประเภท</th><th>รายละเอียด</th></tr></thead>
+          <tbody id="history-body"></tbody>
+        </table>
+      </div>
+      <p class="count" id="history-count"></p>
+    </section>
+  </div>
+</main>
+<div class="toast" id="toast" role="alert"></div>
+
+<script>
+const FACES = { hungry: "😿", sleepy: "😴", happy: "😸", ok: "😺" };
+const $ = (sel) => document.querySelector(sel);
+let hasPet = false;
+
+async function api(path, options = {}) {
+  const res = await fetch(path, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+  let data = {};
+  try { data = await res.json(); } catch (e) { /* ไม่มี body */ }
+  if (!res.ok) throw new Error(data.error || `เกิดข้อผิดพลาด (${res.status})`);
+  return data;
+}
+
+function el(tag, props = {}, children = []) {
+  const node = Object.assign(document.createElement(tag), props);
+  node.append(...children);
+  return node;
+}
+
+let toastTimer;
+function showError(err) {
+  const toast = $("#toast");
+  toast.textContent = err.message || String(err);
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove("show"), 4000);
+}
+
+function meter(label, value, low) {
+  const cells = el("div", { className: "cells" });
+  const filled = Math.round(value / 10);
+  for (let i = 0; i < 10; i++) cells.append(el("span", { className: i < filled ? "on" : "" }));
+  return el("div", { className: "meter" + (low ? " low" : "") }, [
+    el("span", { textContent: label }),
+    cells,
+    el("span", { className: "meter-value", textContent: value }),
+  ]);
+}
+
+function renderPet(pet) {
+  const lcd = $("#lcd");
+  lcd.replaceChildren();
+  hasPet = Boolean(pet);
+  document.querySelectorAll(".key")
+    .forEach((b) => { b.disabled = !hasPet; });
+  if (!pet) {
+    lcd.append(el("div", { className: "empty-lcd" }, [
+      el("p", { textContent: "ยังไม่มีสัตว์เลี้ยง" }),
+      el("p", { textContent: "ตั้งชื่อแล้วกด “เพิ่มสัตว์เลี้ยง”" }),
+    ]));
+    return;
+  }
+  lcd.append(
+    el("div", { className: "lcd-top" }, [
+      el("span", { className: "lcd-name", textContent: pet.name }),
+      el("span", { className: "lcd-mood", textContent: pet.mood }),
+    ]),
+    el("div", { className: "face", id: "face", textContent: FACES[pet.mood_key] || "😺" }),
+    meter("ความหิว", pet.hunger, pet.hunger > 80),
+    meter("พลังงาน", pet.energy, pet.energy < 20),
+    meter("ความสุข", pet.happiness, pet.happiness < 20),
+  );
+}
+
+function bumpFace() {
+  const face = $("#face");
+  if (!face) return;
+  face.classList.remove("bump");
+  void face.offsetWidth;
+  face.classList.add("bump");
+}
+
+function say(text, note) {
+  const bubble = $("#bubble");
+  bubble.replaceChildren(document.createTextNode(text));
+  if (note) bubble.append(el("small", { textContent: note }));
+}
+
+async function loadPet() {
+  try {
+    renderPet(await api("/api/pet"));
+  } catch (err) {
+    renderPet(null);
+  }
+}
+
+let editingName = null;   // ชื่อที่กำลังแก้อยู่ (แก้ในแถว ไม่ใช้ prompt ของเบราว์เซอร์)
+let confirmingDelete = null;
+let confirmTimer;
+
+function petButton(label, className, onclick) {
+  return el("button", { type: "button", className: "btn " + className, textContent: label, onclick });
+}
+
+function renameRow(pet) {
+  const url = `/api/pets/${encodeURIComponent(pet.name)}`;
+  const input = el("input", {
+    className: "field", value: pet.name, maxLength: 20,
+    ariaLabel: `ชื่อใหม่ของ ${pet.name}`,
+  });
+  const form = el("form", { className: "row rename-form" }, [
+    input,
+    el("button", { type: "submit", className: "btn", textContent: "บันทึกชื่อ" }),
+    petButton("ยกเลิก", "ghost", () => { editingName = null; loadPets().catch(showError); }),
+  ]);
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const result = await run(async () => {
+      const data = await api(url, { method: "PUT", body: JSON.stringify({ new_name: input.value }) });
+      editingName = null;
+      return data;
+    });
+    if (result) say(`เปลี่ยนชื่อเป็น ${result.name} แล้ว`);
+  });
+  setTimeout(() => { input.focus(); input.select(); }, 0);
+  return el("li", {}, [form]);
+}
+
+async function loadPets() {
+  const [sortBy, order] = $("#pet-sort").value.split(":");
+  const data = await api(`/api/pets?sort_by=${sortBy}&order=${order}`);
+  const list = $("#pet-list");
+  list.replaceChildren();
+  if (!data.pets.length) {
+    list.append(el("li", { className: "empty", textContent: "ยังไม่มีสัตว์เลี้ยง เริ่มจากตั้งชื่อตัวแรกด้านบน" }));
+    return;
+  }
+  for (const pet of data.pets) {
+    if (pet.name === editingName) {
+      list.append(renameRow(pet));
+      continue;
+    }
+    const url = `/api/pets/${encodeURIComponent(pet.name)}`;
+    const nameLine = el("div", { className: "pet-name", textContent: pet.name + " " });
+    if (pet.active) nameLine.append(el("span", { className: "here", textContent: "(กำลังเลี้ยง)" }));
+    const actions = el("div", { className: "pet-actions" });
+    if (!pet.active) {
+      actions.append(petButton("เลือก", "ghost", () => run(() => api(`${url}/select`, { method: "POST" }))));
+    }
+    actions.append(petButton("เปลี่ยนชื่อ", "ghost", () => {
+      editingName = pet.name;
+      confirmingDelete = null;
+      loadPets().catch(showError);
+    }));
+    if (confirmingDelete === pet.name) {
+      actions.append(petButton("ยืนยันลบ", "danger confirm", async () => {
+        confirmingDelete = null;
+        const result = await run(() => api(url, { method: "DELETE" }));
+        if (result) say(`ลบ ${result.deleted} แล้ว`);
+      }));
+    } else {
+      actions.append(petButton("ลบ", "danger", () => {
+        confirmingDelete = pet.name;
+        clearTimeout(confirmTimer);
+        confirmTimer = setTimeout(() => { confirmingDelete = null; loadPets().catch(() => {}); }, 4000);
+        loadPets().catch(showError);
+      }));
+    }
+    list.append(el("li", {}, [
+      nameLine,
+      actions,
+      el("div", {
+        className: "pet-stats",
+        textContent: `หิว ${pet.hunger}, พลังงาน ${pet.energy}, สุข ${pet.happiness} (${pet.mood})`,
+      }),
+    ]));
+  }
+}
+
+function fillSelect(select, values, allLabel) {
+  const current = select.value;
+  select.replaceChildren(el("option", { value: "", textContent: allLabel }));
+  for (const v of values) select.append(el("option", { value: v, textContent: v }));
+  select.value = values.includes(current) ? current : "";
+}
+
+async function loadHistory() {
+  const [sortBy, order] = $("#h-sort").value.split(":");
+  const params = new URLSearchParams({
+    q: $("#h-q").value,
+    source: $("#h-source").value,
+    kind: $("#h-kind").value,
+    pet: $("#h-pet").value,
+    sort_by: sortBy,
+    order,
+    limit: 100,
+  });
+  const data = await api(`/api/history?${params}`);
+  fillSelect($("#h-source"), data.filters.sources, "ทุกแหล่งที่มา");
+  fillSelect($("#h-kind"), data.filters.kinds, "ทุกประเภท");
+  fillSelect($("#h-pet"), data.filters.pets, "ทุกตัว");
+  const body = $("#history-body");
+  body.replaceChildren();
+  if (!data.results.length) {
+    body.append(el("tr", {}, [el("td", { colSpan: 5, className: "empty", textContent: "ไม่พบประวัติที่ตรงเงื่อนไข" })]));
+  }
+  for (const h of data.results) {
+    body.append(el("tr", {}, [
+      el("td", { className: "time", textContent: h.timestamp.replace("T", " ") }),
+      el("td", { textContent: h.pet || "-" }),
+      el("td", { textContent: h.source }),
+      el("td", { textContent: h.kind }),
+      el("td", { textContent: h.content }),
+    ]));
+  }
+  const shown = data.results.length;
+  $("#history-count").textContent = shown < data.count
+    ? `แสดง ${shown} จาก ${data.count} รายการ` : `ทั้งหมด ${data.count} รายการ`;
+}
+
+async function refreshAll() {
+  await Promise.all([loadPet(), loadPets(), loadHistory()]);
+}
+
+async function run(task) {
+  try {
+    const result = await task();
+    await refreshAll();
+    return result;
+  } catch (err) {
+    showError(err);
+  }
+}
+
+document.querySelectorAll(".key").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    const result = await run(() => api(`/api/pet/actions/${btn.dataset.action}`, { method: "POST" }));
+    if (result) { say(result.message); bumpFace(); }
+  });
+});
+
+$("#add-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const input = $("#add-name");
+  const result = await run(() => api("/api/pets", { method: "POST", body: JSON.stringify({ name: input.value }) }));
+  if (result) { input.value = ""; say(`ยินดีต้อนรับ ${result.name}!`); }
+});
+
+$("#pet-sort").addEventListener("change", () => loadPets().catch(showError));
+let searchTimer;
+$("#h-q").addEventListener("input", () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => loadHistory().catch(showError), 250);
+});
+["#h-source", "#h-kind", "#h-pet", "#h-sort"].forEach((sel) =>
+  $(sel).addEventListener("change", () => loadHistory().catch(showError)));
+
+async function start() {
+  try {
+    const { warning } = await api("/api/warning");
+    if (warning) showError(new Error(warning));
+  } catch (err) { /* ไม่สำคัญ */ }
+  await refreshAll().catch(showError);
+  setInterval(() => { loadPet(); if (!editingName) loadPets().catch(() => {}); }, 10000);
+}
+start();
+</script>
+</body>
+</html>

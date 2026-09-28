@@ -7,3 +7,7 @@ pet_state.json
 pets.json
 pets_backup.json
 interaction_history.json
+interaction_history_backup.json
+*.corrupt
+*.tmp
+.env

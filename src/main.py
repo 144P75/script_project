@@ -1,141 +1,146 @@
+"""Entry point ของ CLI: python -m src.main"""
 import sys
-from src.cli import CLIHandler
-from src.pet_manager import PetManager
-from web import history
+
+from src.cli import COMMANDS, CLIHandler
+from src.exceptions import InvalidInputError, PetError
+from src.pet_manager import PET_SORT_KEYS
+from src.service import ACTIONS, PetService
+
+if hasattr(sys.stdout, "reconfigure"):  # ให้ภาษาไทยแสดงผลได้บน Windows
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stdin.reconfigure(encoding="utf-8")
+
+HISTORY_COLUMNS = [
+    ("timestamp", "เวลา", 19),
+    ("pet", "สัตว์เลี้ยง", 10),
+    ("source", "แหล่งที่มา", 14),
+    ("kind", "ประเภท", 7),
+    ("content", "รายละเอียด", 40),
+]
+PET_COLUMNS = [
+    ("marker", " ", 1),
+    ("name", "ชื่อ", 20),
+    ("hunger", "หิว", 4),
+    ("energy", "พลังงาน", 7),
+    ("happiness", "สุข", 4),
+    ("mood", "อารมณ์", 18),
+]
 
 
-def main():
-    CLIHandler.display_welcome()
-    manager = PetManager()
+def ask_new_pet(service):
+    name = CLIHandler.ask("ตั้งชื่อสัตว์เลี้ยงของคุณ: ")
+    pet = service.create_pet(name)
+    CLIHandler.display_message(f"ยินดีต้อนรับ {pet['name']}!")
 
-    if not manager.pets:
-        name = input("กรุณาตั้งชื่อสัตว์เลี้ยงของคุณ: ").strip() or "Buddy"
-        print(manager.add_pet(name))
-    else:
-        print(f"\nต้อนรับการกลับมา! โหลดข้อมูลของ {manager.active_pet.name} เรียบร้อย")
 
+def cmd_pets(service):
+    sort_by = CLIHandler.choose("เรียงตาม", list(PET_SORT_KEYS), allow_blank=True) or "name"
+    order = "desc" if sort_by in ("hunger", "energy", "happiness") else "asc"
+    pets = service.list_pets(sort_by, order)
+    for pet in pets:
+        pet["marker"] = "*" if pet["active"] else ""
+    CLIHandler.display_table(pets, PET_COLUMNS)
+    print("(* = ตัวที่กำลังใช้งาน)")
+
+
+def cmd_addpet(service):
+    ask_new_pet(service)
+
+
+def cmd_switchpet(service):
+    pet = service.select_pet(CLIHandler.ask("สลับไปยังสัตว์เลี้ยงชื่อ: "))
+    CLIHandler.display_message(f"สลับไปยัง {pet['name']} เรียบร้อย")
+
+
+def cmd_renamepet(service):
+    old = CLIHandler.ask("ชื่อเดิม: ")
+    new = CLIHandler.ask("ชื่อใหม่: ")
+    pet = service.rename_pet(old, new)
+    CLIHandler.display_message(f"เปลี่ยนชื่อเป็น {pet['name']} เรียบร้อย")
+
+
+def cmd_removepet(service):
+    name = CLIHandler.ask("ชื่อสัตว์เลี้ยงที่จะลบ: ")
+    if CLIHandler.ask(f"ยืนยันการลบ '{name}'? (y/n): ").lower() != "y":
+        CLIHandler.display_message("ยกเลิกการลบ")
+        return
+    result = service.delete_pet(name)
+    CLIHandler.display_message(f"ลบ {result['deleted']} เรียบร้อย")
+
+
+def cmd_history(service):
+    menu = ["ดู 10 รายการล่าสุด", "ค้นหาด้วยคำค้น", "กรองตามแหล่งที่มา/ประเภท/สัตว์เลี้ยง",
+            "เรียงลำดับ", "กลับเมนูหลัก"]
     while True:
-        CLIHandler.display_status(manager.active_pet)
-        cmd = CLIHandler.get_command_input()
+        print("\n--- History Menu ---")
+        try:
+            choice = CLIHandler.choose("เลือกเมนูย่อย", menu)
+            if choice == menu[0]:
+                rows = service.query_history(limit=10)
+            elif choice == menu[1]:
+                rows = service.query_history(keyword=CLIHandler.ask("คำค้นหา: "))
+            elif choice == menu[2]:
+                filters = service.history_filters()
+                picked = {}
+                for field, title in (("sources", "แหล่งที่มา"), ("kinds", "ประเภทกิจกรรม"), ("pets", "สัตว์เลี้ยง")):
+                    print(f"{title}:")
+                    options = filters[field]
+                    picked[field] = CLIHandler.choose("เลือก", options, allow_blank=True) if options else None
+                rows = service.query_history(source=picked["sources"], kind=picked["kinds"], pet=picked["pets"])
+            elif choice == menu[3]:
+                raw = CLIHandler.ask("เรียงตาม (timestamp/source/kind/pet คั่นด้วย , เช่น kind,timestamp): ")
+                order = "asc" if CLIHandler.ask("1 = เก่า→ใหม่ / A→Z, 2 = ใหม่→เก่า / Z→A: ") == "1" else "desc"
+                rows = service.query_history(sort_by=raw or "timestamp", order=order)
+            else:
+                return
+            rows = [dict(r, timestamp=r["timestamp"].replace("T", " ")) for r in rows]
+            CLIHandler.display_table(rows, HISTORY_COLUMNS)
+        except PetError as e:
+            CLIHandler.display_error(e.message)
 
-        if cmd in ["quit", "exit"]:
-            manager.save_pets()
-            print(f"\nบันทึกข้อมูลเรียบร้อย ลาก่อนจาก {manager.active_pet.name}! 👋")
-            sys.exit(0)
 
-        elif cmd == "feed":
-            msg = manager.active_pet.feed()
-            print(f"\n> {msg}")
-            history.add_entry("User", "feed", msg)
-            manager.save_pets()
+HANDLERS = {
+    "pets": cmd_pets,
+    "addpet": cmd_addpet,
+    "switchpet": cmd_switchpet,
+    "renamepet": cmd_renamepet,
+    "removepet": cmd_removepet,
+    "history": cmd_history,
+    "help": lambda service: CLIHandler.display_help(),
+}
 
-        elif cmd == "play":
-            msg = manager.active_pet.play()
-            print(f"\n> {msg}")
-            history.add_entry("User", "play", msg)
-            manager.save_pets()
 
-        elif cmd == "sleep":
-            msg = manager.active_pet.sleep()
-            print(f"\n> {msg}")
-            history.add_entry("User", "sleep", msg)
-            manager.save_pets()
+def run_command(service, cmd):
+    if cmd in ACTIONS:
+        CLIHandler.display_message(service.perform(cmd)["message"])
+    elif cmd in HANDLERS:
+        HANDLERS[cmd](service)
+    else:
+        raise InvalidInputError(f"ไม่รู้จักคำสั่ง '{cmd}' พิมพ์ help เพื่อดูคำสั่ง ({', '.join(COMMANDS)})")
 
-        elif cmd == "fact":
-            msg = manager.active_pet.interact_api()
-            print(f"\n> {msg}")
-            history.add_entry("Cat Facts API", "fact", msg)
-            manager.save_pets()
 
-        elif cmd == "save":
-            manager.save_pets()
-            print("\n> บันทึกสถานะสัตว์เลี้ยงสำเร็จ!")
-
-        elif cmd == "addpet":
-            name = input("ตั้งชื่อสัตว์เลี้ยงใหม่: ").strip()
-            print(manager.add_pet(name))
-
-        elif cmd == "switchpet":
-            name = input("สลับไปยังสัตว์เลี้ยงชื่อ: ").strip()
-            print(manager.switch_pet(name))
-
-        elif cmd == "history":
-            while True:
-                print("\n--- History Menu ---")
-                print("1. ดู 5 รายการล่าสุด")
-                print("2. ค้นหาตามคำค้นหา (keyword)")
-                print("3. กรองตามแหล่งที่มา/ประเภทกิจกรรม")
-                print("4. เรียงลำดับเวลา")
-                print("5. กลับไปเมนูหลัก")
-                choice = input("เลือกเมนูย่อย: ").strip()
-
-                data = history.load_history()
-                if not data:
-                    print("\n--- ยังไม่มีประวัติการโต้ตอบ ---")
-                else:
-                    if choice == "1":
-                        for entry in reversed(data[-5:]):
-                            print(f"[{entry['timestamp']}] {entry['source']} ({entry['kind']}): {entry['content']}")
-
-                    elif choice == "2":
-                        keyword = input("🔎 กรอก Keyword: ").strip()
-                        results = history.search_history(data, keyword)
-                        if not results:
-                            print("\n--- ไม่พบข้อมูลที่ตรงกับคำค้นหา ---")
-                        else:
-                            for entry in results:
-                                print(f"[{entry['timestamp']}] {entry['source']} ({entry['kind']}): {entry['content']}")
-
-                    elif choice == "3":
-                        print("เลือกแหล่งที่มา:")
-                        print("1. User")
-                        print("2. Fact")
-                        src_choice = input("พิมพ์หมายเลข: ").strip()
-
-                        if src_choice == "1":
-                            src = "User"
-                            print("เลือกประเภทกิจกรรม: User")
-                            print("1. feed")
-                            print("2. play")
-                            print("3. sleep")
-                            kind_choice = input("พิมพ์หมายเลข: ").strip()
-                            kind_map = {"1": "feed", "2": "play", "3": "sleep"}
-                            kind = kind_map.get(kind_choice)
-                        elif src_choice == "2":
-                            src = "Cat Facts API"
-                            kind = "fact"
-                        else:
-                            print("\n[คำสั่งไม่ถูกต้อง] กรุณาเลือก 1 หรือ 2")
-                            continue
-
-                        results = history.filter_history(data, source=src, kind=kind)
-                        if not results:
-                            print("\n--- ไม่พบข้อมูลที่ตรงกับการกรอง ---")
-                        else:
-                            for entry in results:
-                                print(f"[{entry['timestamp']}] {entry['source']} ({entry['kind']}): {entry['content']}")
-
-                    elif choice == "4":
-                        print("เลือกการเรียงลำดับเวลา:")
-                        print("1. เก่าสุดก่อน")
-                        print("2. ใหม่สุดก่อน")
-                        order_choice = input("พิมพ์หมายเลข: ").strip()
-                        order = "asc" if order_choice == "1" else "desc" if order_choice == "2" else None
-                        if not order:
-                            print("\n[คำสั่งไม่ถูกต้อง] กรุณาเลือก 1 หรือ 2")
-                            continue
-                        results = history.sort_history(data, order)
-                        for entry in results:
-                            print(f"[{entry['timestamp']}] {entry['source']} ({entry['kind']}): {entry['content']}")
-
-                    elif choice == "5":
-                        break
-
-                    else:
-                        print("\n[คำสั่งไม่ถูกต้อง] กรุณาเลือก 1–5")
-
-        else:
-            print("\n[คำสั่งไม่ถูกต้อง] กรุณาพิมพ์: feed, play, sleep, fact, save, add pet, switch pet, history หรือ quit")
+def main(service=None):
+    service = service or PetService()
+    CLIHandler.display_welcome()
+    warning = service.pop_warning()
+    if warning:
+        CLIHandler.display_error(warning)
+    try:
+        while True:
+            try:
+                if not service.has_pet():
+                    ask_new_pet(service)
+                    continue
+                CLIHandler.display_status(service.status())
+                cmd = CLIHandler.get_command_input()
+                if cmd in ("quit", "exit"):
+                    break
+                run_command(service, cmd)
+            except PetError as e:
+                CLIHandler.display_error(e.message)
+    except (KeyboardInterrupt, EOFError):
+        print()
+    print("\nบันทึกข้อมูลเรียบร้อย ลาก่อน! 👋")
 
 
 if __name__ == "__main__":
