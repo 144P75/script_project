@@ -34,12 +34,16 @@ def test_cli_and_web_stay_in_sync(make_service):
     assert cli.status()["name"] == "Mimi"
 
 
-def test_crud_is_logged(service):
+def test_crud_updates_history(service):
     service.create_pet("Milo")
-    service.rename_pet("milo", "Momo")
+    service.create_pet("Mimi")
+    service.perform("feed")
+    service.rename_pet("mimi", "Momo")
+    assert service.query_history(pet="Mimi") == []
+    assert {h["kind"] for h in service.query_history(pet="Momo")} == {"create", "feed", "rename"}
     service.delete_pet("Momo")
-    assert [h["kind"] for h in service.query_history(source="System", order="asc")] == ["create", "rename", "delete"]
-    assert service.history_filters()["kinds"] == ["create", "delete", "rename"]
+    assert service.query_history(pet="Momo") == []
+    assert service.history_filters()["pets"] == ["Milo"]
 
 
 def test_concurrent_requests_do_not_lose_writes(service):

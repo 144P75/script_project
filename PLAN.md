@@ -152,7 +152,7 @@ classDiagram
 | field | ค่าที่เป็นไปได้ |
 |---|---|
 | source | `User`, `Cat Facts API`, `System` |
-| kind | `feed`, `play`, `sleep`, `fact`, `create`, `rename`, `delete` |
+| kind | `feed`, `play`, `sleep`, `fact`, `create`, `rename`|
 
 ## 5. กฎของเกม (Business Rules)
 | เหตุการณ์ | ผล |

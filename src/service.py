@@ -104,6 +104,7 @@ class PetService:
         self.manager.reload()
         old = self.manager.get_pet(old_name).name
         pet = self.manager.rename_pet(old_name, new_name)
+        self.history.rename_pet(old, pet.name)
         self.history.add("System", "rename", f"เปลี่ยนชื่อ {old} เป็น {pet.name}", pet=pet.name)
         return self._view(pet)
 
@@ -111,7 +112,7 @@ class PetService:
     def delete_pet(self, name):
         self.manager.reload()
         pet = self.manager.delete_pet(name)
-        self.history.add("System", "delete", f"ลบสัตว์เลี้ยง {pet.name}", pet=pet.name)
+        self.history.remove_pet(pet.name)  # ลบสัตว์เลี้ยงแล้ว ประวัติของตัวนั้นหายไปด้วย
         return {"deleted": pet.name, "active": self.manager.active_name}
 
     # ---------- ประวัติ ----------

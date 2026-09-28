@@ -84,5 +84,20 @@ class InteractionHistory:
         entries = filter_history(entries, source=source, kind=kind, pet=pet)
         return sort_history(entries, sort_by=sort_by, order=order)
 
+    def remove_pet(self, name):
+        """ลบประวัติทั้งหมดของสัตว์เลี้ยงตัวนี้ คืนจำนวนรายการที่ลบ"""
+        entries = self.load()
+        kept = [e for e in entries if _text(e, "pet") != name]
+        self.store.save(kept)
+        return len(entries) - len(kept)
+
+    def rename_pet(self, old_name, new_name):
+        """ย้ายประวัติของชื่อเดิมไปอยู่ใต้ชื่อใหม่"""
+        entries = self.load()
+        for e in entries:
+            if _text(e, "pet") == old_name:
+                e["pet"] = new_name
+        self.store.save(entries)
+
     def distinct(self, field):
         return sorted({_text(e, field) for e in self.load() if _text(e, field)})
