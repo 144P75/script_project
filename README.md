@@ -127,18 +127,21 @@ script_project/
 │
 └── sprints/                           หลักฐานการทำงานแยกตามรอบ (ไม่มีโค้ด)
     ├── sprint1/
+    │   ├── code/                      Source Code ของ Sprint 1
     │   ├── REPORT.md                  Scope, DoD, บทบาททีมของ Sprint
     │   ├── QA_TEST_LOG.md             ตารางผลทดสอบ (Observation/Expected/Actual)
     │   ├── RETROSPECTIVE.md           Wow! / Whoops!
     │   └── PEER_EVALUATION.md         คะแนนประเมิน self/peer ตามบทบาท
     │
     ├── sprint2/
+    │   ├── code/                      Source Code ของ Sprint 2
     │   ├── REPORT.md
     │   ├── QA_TEST_LOG.md
     │   ├── RETROSPECTIVE.md
     │   └── PEER_EVALUATION.md
     │
     ├── sprint3/
+    │   ├── code/                      Source Code ของ Sprint 3
     │   ├── REPORT.md
     │   ├── QA_TEST_LOG.md
     │   ├── RETROSPECTIVE.md

@@ -1,0 +1,27 @@
+"""Fixtures กลางของชุดทดสอบ — ทุกเทสต์ใช้ไฟล์ชั่วคราวและไม่เรียกอินเทอร์เน็ตจริง"""
+import pytest
+
+from src.pet import Interaction
+from src.pet_manager import PetManager
+
+FAKE_FACT = "🐱 เกร็ดความรู้แมว: test fact"
+
+
+@pytest.fixture(autouse=True)
+def no_network(monkeypatch):
+    monkeypatch.setattr(Interaction, "fetch_cat_fact", staticmethod(lambda: FAKE_FACT))
+
+
+@pytest.fixture
+def paths(tmp_path):
+    return {
+        "data": str(tmp_path / "pets.json"),
+        "backup": str(tmp_path / "pets_backup.json"),
+        "history": str(tmp_path / "history.json"),
+        "history_backup": str(tmp_path / "history_backup.json"),
+    }
+
+
+@pytest.fixture
+def make_manager(paths):
+    return lambda: PetManager(paths["data"], paths["backup"])
