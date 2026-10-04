@@ -175,15 +175,15 @@ script_project/
 
    เปิด CLI และเว็บพร้อมกันได้ ทั้งสองใช้ข้อมูลชุดเดียวกัน
 
-5. **เปิด AI Companion (ไม่บังคับ):** ตั้ง API key ของเจ้าใดเจ้าหนึ่งก่อนรัน ถ้าไม่ตั้ง `talk` จะตอบแบบออฟไลน์ตามอารมณ์ (ห้าม commit key ลง repo)
+5. **เปิด AI Companion (ไม่บังคับ):** copy `.env.example` แล้วเปลี่ยนชื่อเป็น `.env` จากนั้นใส่ key ของเจ้าใดเจ้าหนึ่ง เช่น `GEMINI_API_KEY=xxxx` เกมจะอ่านไฟล์นี้เองทุกครั้งที่เปิด ถ้าไม่ใส่ `talk` จะตอบแบบออฟไลน์ตามอารมณ์
 
-   | AI | ตั้งค่า (cmd) | สร้าง key ที่ |
+   | AI | ตัวแปรใน `.env` | สร้าง key ที่ |
    |---|---|---|
-   | Gemini | `set GEMINI_API_KEY=...` | aistudio.google.com |
-   | ChatGPT | `set OPENAI_API_KEY=...` | platform.openai.com |
-   | Claude | `set ANTHROPIC_API_KEY=...` | platform.claude.com |
+   | Gemini (มีโควตาฟรี) | `GEMINI_API_KEY` | aistudio.google.com |
+   | ChatGPT | `OPENAI_API_KEY` | platform.openai.com |
+   | Claude | `ANTHROPIC_API_KEY` | platform.claude.com |
 
-   ถ้ามีหลาย key เลือกเองได้ด้วย `set AI_PROVIDER=gemini` (หรือ `openai`, `claude`)
+   ถ้าใส่หลาย key เลือกเองได้ด้วย `AI_PROVIDER=gemini` (หรือ `openai`, `claude`) — ไฟล์ `.env` ไม่ถูก commit ขึ้น GitHub
 
 6. **ทดสอบระบบ:**
 ```bash
@@ -191,6 +191,12 @@ script_project/
    flake8 .                       # ตรวจรูปแบบโค้ด
    python -m scripts.benchmark    # วัดความเร็ว search/filter/sort
 ```
+
+### ☁️ Deploy ออนไลน์ (Render)
+ตั้งค่าไว้ใน `render.yaml` — บน Render เลือก **New → Blueprint** แล้วเลือก repo นี้ จากนั้นใส่ `GEMINI_API_KEY` ในหน้า Render
+- รันด้วย `gunicorn` **1 worker** หลาย thread เพราะ lock ใน `PetService` ทำงานภายใน process เดียว
+- แผนฟรี: server หลับเมื่อไม่มีคนใช้ (เปิดครั้งแรกช้า) และไม่เก็บไฟล์ถาวร ข้อมูลสัตว์เลี้ยงหายเมื่อ deploy ใหม่หรือ restart
+- ทุกคนที่เปิดลิงก์ใช้ข้อมูลชุดเดียวกันและใช้โควตา AI ของเจ้าของ key
 
 ---
 

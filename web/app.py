@@ -1,10 +1,12 @@
 """Presentation Layer (Web): Flask API + หน้าเว็บเกม
 
 รัน: python -m web.app แล้วเปิด http://127.0.0.1:5000
+บน server (Render): gunicorn "web.app:create_app()" ดู render.yaml
 ทุก route เรียก PetService ตัวเดียวกับ CLI จึงใช้ข้อมูลชุดเดียวกัน
 """
 import os
 
+from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
 from werkzeug.exceptions import HTTPException
 
@@ -113,4 +115,5 @@ def create_app(service=None):
 
 
 if __name__ == "__main__":
+    load_dotenv()  # อ่าน API key จากไฟล์ .env (ถ้ามี)
     create_app().run(host="127.0.0.1", port=int(os.environ.get("PORT", 5000)))
