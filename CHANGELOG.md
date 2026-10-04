@@ -4,12 +4,24 @@
 รูปแบบเลขเวอร์ชัน `MAJOR.MINOR.PATCH` — MINOR เพิ่มเมื่อมีฟีเจอร์ใหม่ (1 Sprint = 1 MINOR),
 PATCH เพิ่มเมื่อเป็นการแก้บั๊กหรือเก็บงานโดยไม่มีฟีเจอร์ใหม่ และจะขึ้น 1.0.0 เมื่อส่งงาน Final ครบและผ่านการตรวจแล้ว
 
-## [Unreleased] — Final Sprint (วางแผนไว้ ยังไม่เริ่ม)
+## [Unreleased]
 
-รายละเอียดใน `sprints/sprint-final/REPORT.md`
-- **0.4.0** (เป้าหมาย: ก่อนนำเสนอ 6-7/10/69) — AI Companion คำสั่ง `talk` ที่รู้สถานะของสัตว์เลี้ยง, CI รันหลายเวอร์ชัน Python และ flake8 แบบเต็ม, เทสต์ที่ mock AI
 - **0.4.x** — แก้ไขตามที่พบระหว่างนำเสนอ
 - **1.0.0** (เป้าหมาย: ส่งงาน 16/10/69) — เวอร์ชันส่งงานสุดท้าย เอกสารครบ ไม่มีฟีเจอร์ใหม่เพิ่มจาก 0.4.x
+
+## [0.4.0] — Final Sprint
+
+### Added
+- `src/companion.py` — `PetCompanion` ส่งสถานะสัตว์เลี้ยง (ชื่อ, หิว, พลังงาน, ความสุข, อารมณ์) เป็น system prompt ให้ Claude API ตอบในบทบาทแมว
+- โหมดออฟไลน์: ไม่มี `ANTHROPIC_API_KEY`, API timeout/ล่ม หรือตอบผิดรูปแบบ → ตอบข้อความสำรองตามอารมณ์ ไม่ crash
+- `PetService.talk()` — ตรวจข้อความ (ว่าง / เกิน 200 ตัวอักษร), ความสุข +5, บันทึกทั้งข้อความผู้ใช้และคำตอบลงประวัติ (`kind = talk`)
+- คำสั่ง CLI `talk` (คุยต่อเนื่องจนกด Enter ว่าง) และ `POST /api/pet/talk` + กล่องสนทนาบนหน้าเว็บ พร้อมป้าย "ตอบโดย AI" / "โหมดออฟไลน์"
+- `tests/test_companion.py` และเทสต์ `talk` ใน Service/Web API (mock AI ทั้งหมด รวม 70 เทสต์)
+
+### Changed
+- CI: matrix Python 3.10 และ 3.12, flake8 แบบเต็ม, อัปเดต `actions/checkout@v4` และ `actions/setup-python@v5`
+- `setup.cfg` — flake8 ไม่ตรวจโค้ด snapshot ใน `sprints/`
+- เรียก AI นอก lock ของ `PetService` เพื่อไม่ให้ request อื่นรอ API
 
 ## [0.3.1] — Sprint 3 (patch) 
 

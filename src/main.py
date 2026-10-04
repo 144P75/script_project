@@ -68,6 +68,21 @@ def cmd_removepet(service):
     CLIHandler.display_message(f"ลบ {result['deleted']} เรียบร้อย")
 
 
+def cmd_talk(service):
+    print("พิมพ์ข้อความคุยกับสัตว์เลี้ยง (Enter ว่าง = กลับเมนูหลัก)")
+    while True:
+        message = CLIHandler.ask("คุณ: ")
+        if not message:
+            return
+        try:
+            result = service.talk(message)
+        except PetError as e:
+            CLIHandler.display_error(e.message)
+            continue
+        note = "" if result["online"] else " (โหมดออฟไลน์)"
+        print(f"{result['pet']['name']}{note}: {result['reply']}")
+
+
 def cmd_history(service):
     menu = ["ดู 10 รายการล่าสุด", "ค้นหาด้วยคำค้น", "กรองตามแหล่งที่มา/ประเภท/สัตว์เลี้ยง",
             "เรียงลำดับ", "กลับเมนูหลัก"]
@@ -105,6 +120,7 @@ HANDLERS = {
     "switchpet": cmd_switchpet,
     "renamepet": cmd_renamepet,
     "removepet": cmd_removepet,
+    "talk": cmd_talk,
     "history": cmd_history,
     "help": lambda service: CLIHandler.display_help(),
 }
