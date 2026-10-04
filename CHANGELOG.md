@@ -9,6 +9,14 @@ PATCH เพิ่มเมื่อเป็นการแก้บั๊ก�
 - **0.4.x** — แก้ไขตามที่พบระหว่างนำเสนอ
 - **1.0.0** (เป้าหมาย: ส่งงาน 16/10/69) — เวอร์ชันส่งงานสุดท้าย เอกสารครบ ไม่มีฟีเจอร์ใหม่เพิ่มจาก 0.4.x
 
+## [0.4.2] — Final Sprint (patch)
+
+### Changed
+- ตั้ง API key ผ่านไฟล์ `.env` ได้ ไม่ต้องตั้งใน terminal ทุกครั้ง (เพิ่ม `python-dotenv`, `.env.example`)
+- AI Companion ลองใหม่ 1 ครั้งเมื่อเจอ error ชั่วคราว (timeout, 429, 5xx) ก่อนตกไปโหมดออฟไลน์ และพิมพ์สาเหตุลง log
+- รุ่น Gemini เริ่มต้นเปลี่ยนเป็น `gemini-flash-lite-latest` (รุ่นปกติเจอ 503 server ไม่ว่างบ่อย) และรับชื่อรุ่นที่มี `models/` นำหน้าได้
+- เตรียม deploy บน Render: `render.yaml` + รันด้วย `gunicorn` 1 worker หลาย thread (lock ของ `PetService` ทำงานภายใน process เดียว) — merge เข้า main แล้ว deploy อัตโนมัติ
+
 ## [0.4.1] — Final Sprint (patch)
 
 ### Changed

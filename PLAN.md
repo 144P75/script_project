@@ -231,6 +231,7 @@ classDiagram
 
 | Final | Design | ถ้าเรียก AI ขณะถือ lock request อื่นต้องรอ API นานสุด 10 วินาที | อัปเดตสถานะ+บันทึกใน lock แล้วเรียก AI นอก lock |
 | Final | Refactor | CI ตรวจ flake8 เฉพาะ error ร้ายแรง และรันแค่ Python 3.10 | flake8 เต็ม (ไม่รวม snapshot ใน `sprints/`), matrix 3.10/3.12 |
+| Final | DevOps | ถ้า deploy ด้วย gunicorn หลาย worker แต่ละ process มี lock ของตัวเอง กลับไปเกิดข้อมูลหายเหมือน Sprint 3 | ใช้ 1 worker หลาย thread (`render.yaml`) |
 
 ## 9. ทางเลือกที่พิจารณา (Design Decisions)
 | เรื่อง | เลือก | ทางเลือกอื่น | เหตุผล |

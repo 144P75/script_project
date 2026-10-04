@@ -12,9 +12,16 @@ OPENAI_OK = {"choices": [{"message": {"content": "เมี้ยว!"}}]}
 CLAUDE_OK = {"content": [{"type": "text", "text": "เมี้ยว!"}]}
 
 
-def fake_response(json_data):
-    res = MagicMock()
+@pytest.fixture(autouse=True)
+def no_sleep(monkeypatch):
+    monkeypatch.setattr(companion.time, "sleep", lambda s: None)
+
+
+def fake_response(json_data, status=200):
+    res = MagicMock(status_code=status)
     res.json.return_value = json_data
+    if status >= 400:
+        res.raise_for_status.side_effect = requests.HTTPError(str(status))
     return res
 
 
@@ -63,3 +70,26 @@ def test_api_failure_falls_back(monkeypatch, provider, behavior):
     monkeypatch.setattr(companion.requests, "post", MagicMock(**kwargs))
     text, online = PetCompanion(provider, api_key="k").reply(Pet("Milo"), "hi")
     assert not online and "Milo" in text
+
+
+@pytest.mark.parametrize("first", [fake_response({}, status=503), requests.Timeout()])
+def test_retry_once_on_temporary_error(monkeypatch, first):
+    post = MagicMock(side_effect=[first, fake_response(GEMINI_OK)])
+    monkeypatch.setattr(companion.requests, "post", post)
+    assert PetCompanion("gemini", api_key="k").reply(Pet("Milo"), "hi") == ("เมี้ยว!", True)
+    assert post.call_count == 2
+
+
+def test_gives_up_after_second_failure(monkeypatch):
+    post = MagicMock(return_value=fake_response({}, status=503))
+    monkeypatch.setattr(companion.requests, "post", post)
+    assert PetCompanion("gemini", api_key="k").reply(Pet("Milo"), "hi")[1] is False
+    assert post.call_count == 2
+
+
+def test_model_name_with_prefix(monkeypatch):
+    monkeypatch.setenv("GEMINI_MODEL", "models/gemini-x")
+    post = MagicMock(return_value=fake_response(GEMINI_OK))
+    monkeypatch.setattr(companion.requests, "post", post)
+    PetCompanion("gemini", api_key="k").reply(Pet("Milo"), "hi")
+    assert "/models/gemini-x:" in post.call_args.args[0]

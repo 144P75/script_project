@@ -1,6 +1,8 @@
 """Entry point ของ CLI: python -m src.main"""
 import sys
 
+from dotenv import load_dotenv
+
 from src.cli import COMMANDS, CLIHandler
 from src.exceptions import InvalidInputError, PetError
 from src.pet_manager import PET_SORT_KEYS
@@ -160,4 +162,5 @@ def main(service=None):
 
 
 if __name__ == "__main__":
+    load_dotenv()  # อ่าน API key จากไฟล์ .env (ถ้ามี)
     main()

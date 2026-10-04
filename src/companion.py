@@ -1,14 +1,19 @@
 """AI Companion: สัตว์เลี้ยงตอบข้อความตามสถานะจริง (Gemini / ChatGPT / Claude) พร้อมโหมดออฟไลน์"""
+import logging
 import os
 import random
+import time
 
 import requests
 
 MAX_MESSAGE_LENGTH = 200
 TIMEOUT = 10
+RETRY_STATUS = {429, 500, 502, 503, 504}  # error ชั่วคราว (โควตาต่อนาที / server ยุ่ง) ลองใหม่ 1 ครั้ง
+
+logger = logging.getLogger(__name__)
 
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-GEMINI_MODEL = "gemini-flash-latest"
+GEMINI_MODEL = "gemini-flash-lite-latest"
 OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 OPENAI_MODEL = "gpt-5.4-mini"
 CLAUDE_URL = "https://api.anthropic.com/v1/messages"
@@ -35,7 +40,8 @@ def build_system_prompt(pet):
         f"สถานะตอนนี้ (0-100): ความหิว {m.hunger} (ยิ่งมากยิ่งหิว), พลังงาน {m.energy}, "
         f"ความสุข {m.happiness}, อารมณ์: {m.get_mood_key()}\n"
         "ให้คำตอบสะท้อนสถานะนี้ เช่น หิวมากก็ขออาหาร ง่วงก็ขอนอน มีความสุขก็ชวนเล่น\n"
-        "ตอบสั้น 1-2 ประโยค เป็นภาษาเดียวกับผู้ใช้ น่ารักแบบแมว ไม่ต้องอธิบายว่าเป็น AI"
+        "ตอบสั้น 1-2 ประโยค เป็นภาษาเดียวกับผู้ใช้ น่ารักแบบแมว ไม่ต้องอธิบายว่าเป็น AI\n"
+        "ห้ามพูดตัวเลขสถานะ ให้บอกเป็นความรู้สึกแทน เช่น หิวนิดหน่อย ง่วงมาก"
     )
 
 
@@ -57,17 +63,32 @@ class PetCompanion:
                 text = ask(build_system_prompt(pet), message)
                 if text:
                     return text, True
-            except (requests.RequestException, ValueError, KeyError, TypeError, IndexError):
-                pass
+            except (requests.RequestException, ValueError, KeyError, TypeError, IndexError) as e:
+                logger.warning("AI (%s) ใช้ไม่ได้ → ตอบแบบออฟไลน์: %s", self.provider, e)
         return self.offline_reply(pet), False
+
+    def _post(self, url, **kwargs):
+        """POST แล้วคืน JSON — ถ้า timeout หรือ error ชั่วคราว รอ 1 วินาทีแล้วลองใหม่อีก 1 ครั้ง"""
+        for attempt in range(2):
+            try:
+                response = requests.post(url, timeout=self.timeout, **kwargs)
+                if response.status_code in RETRY_STATUS and attempt == 0:
+                    time.sleep(1)
+                    continue
+                response.raise_for_status()
+                return response.json()
+            except (requests.Timeout, requests.ConnectionError):
+                if attempt == 1:
+                    raise
+                time.sleep(1)
 
     @staticmethod
     def offline_reply(pet):
         return random.choice(OFFLINE_REPLIES[pet.mood_tracker.get_mood_key()]).format(name=pet.name)
 
     def _ask_gemini(self, system, message):
-        model = os.environ.get("GEMINI_MODEL", GEMINI_MODEL)
-        response = requests.post(
+        model = os.environ.get("GEMINI_MODEL", GEMINI_MODEL).removeprefix("models/")
+        data = self._post(
             GEMINI_URL.format(model=model),
             headers={"x-goog-api-key": self.api_key},
             json={
@@ -75,14 +96,12 @@ class PetCompanion:
                 "contents": [{"role": "user", "parts": [{"text": message}]}],
                 "generationConfig": {"maxOutputTokens": 1024},
             },
-            timeout=self.timeout,
         )
-        response.raise_for_status()
-        parts = response.json()["candidates"][0]["content"]["parts"]
+        parts = data["candidates"][0]["content"]["parts"]
         return "".join(p.get("text", "") for p in parts).strip()
 
     def _ask_openai(self, system, message):
-        response = requests.post(
+        data = self._post(
             OPENAI_URL,
             headers={"Authorization": f"Bearer {self.api_key}"},
             json={
@@ -93,13 +112,11 @@ class PetCompanion:
                     {"role": "user", "content": message},
                 ],
             },
-            timeout=self.timeout,
         )
-        response.raise_for_status()
-        return (response.json()["choices"][0]["message"]["content"] or "").strip()
+        return (data["choices"][0]["message"]["content"] or "").strip()
 
     def _ask_claude(self, system, message):
-        response = requests.post(
+        data = self._post(
             CLAUDE_URL,
             headers={
                 "x-api-key": self.api_key,
@@ -112,8 +129,6 @@ class PetCompanion:
                 "system": system,
                 "messages": [{"role": "user", "content": message}],
             },
-            timeout=self.timeout,
         )
-        response.raise_for_status()
-        blocks = response.json()["content"]
+        blocks = data["content"]
         return "".join(b.get("text", "") for b in blocks if b.get("type") == "text").strip()
