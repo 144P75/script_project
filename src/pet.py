@@ -133,6 +133,11 @@ class Pet:
         self.mood_tracker.change(happiness=10)
         return f"คุณใช้เวลาร่วมกับ {self.name}!\n> {Interaction.fetch_cat_fact()}"
 
+    def chat(self):
+        """คุยกับสัตว์เลี้ยงแล้วความสุขเพิ่มขึ้นเล็กน้อย"""
+        self.apply_time_decay()
+        self.mood_tracker.change(happiness=5)
+
     def to_dict(self):
         return {
             "name": self.name,

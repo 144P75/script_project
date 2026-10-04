@@ -205,6 +205,8 @@
     display: none;
   }
   .toast.show { display: block; }
+  .talk-form { margin-top: 14px; }
+  .talk-form .field { flex: 1; min-width: 0; }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 </style>
 </head>
@@ -225,6 +227,11 @@
     <div class="key-labels" aria-hidden="true">
       <span>ให้อาหาร</span><span>เล่น</span><span>นอน</span><span>เกร็ดความรู้</span>
     </div>
+    <form class="row talk-form" id="talk-form">
+      <label class="sr-only" for="talk-input">ข้อความถึงสัตว์เลี้ยง</label>
+      <input class="field" id="talk-input" maxlength="200" placeholder="คุยกับสัตว์เลี้ยง..." autocomplete="off">
+      <button class="btn" type="submit">ส่ง</button>
+    </form>
 
   </div>
 
@@ -522,6 +529,23 @@ $("#add-form").addEventListener("submit", async (e) => {
   const input = $("#add-name");
   const result = await run(() => api("/api/pets", { method: "POST", body: JSON.stringify({ name: input.value }) }));
   if (result) { input.value = ""; say(`ยินดีต้อนรับ ${result.name}!`); }
+});
+
+$("#talk-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const input = $("#talk-input");
+  const button = e.target.querySelector("button");
+  button.disabled = true;
+  say("...");
+  const result = await run(() => api("/api/pet/talk", { method: "POST", body: JSON.stringify({ message: input.value }) }));
+  button.disabled = false;
+  if (result) {
+    input.value = "";
+    say(result.reply, result.online ? "ตอบโดย AI" : "โหมดออฟไลน์");
+    bumpFace();
+  } else {
+    say("ส่งข้อความไม่สำเร็จ ลองอีกครั้ง");
+  }
 });
 
 $("#pet-sort").addEventListener("change", () => loadPets().catch(showError));

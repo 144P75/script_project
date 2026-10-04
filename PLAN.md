@@ -169,6 +169,7 @@ classDiagram
 |---|---|---|---|
 | GET | `/api/pet` | สถานะตัวที่เลี้ยงอยู่ | 409 ยังไม่มีสัตว์เลี้ยง |
 | POST | `/api/pet/actions/<action>` | feed / play / sleep / fact | 400 action ผิด |
+| POST | `/api/pet/talk` | `{"message": "..."}` คุยกับสัตว์เลี้ยง คืน `reply`, `online`, `pet` | 400 ข้อความว่าง/ยาวเกิน 200, 409 |
 | GET | `/api/pets?sort_by=&order=` | รายการสัตว์เลี้ยง (Read) | 400 คีย์เรียงผิด |
 | POST | `/api/pets` | `{"name": "..."}` (Create) | 400 ชื่อผิด, 409 ชื่อซ้ำ |
 | PUT | `/api/pets/<name>` | `{"new_name": "..."}` (Update) | 404, 400, 409 |
@@ -206,10 +207,10 @@ classDiagram
 - [x] ลบตัวสุดท้ายแล้วไม่พัง ระบบพาไปสร้างตัวใหม่
 - [x] หลาย request พร้อมกันไม่ทำให้ข้อมูลหาย
 
-**Final Sprint — DevOps & AI** (แผน รายละเอียดใน `sprints/sprint-final/REPORT.md`)
-- [ ] คำสั่ง `talk` ใช้ได้ทั้ง CLI และเว็บ AI รู้สถานะของสัตว์เลี้ยง และบันทึกลงประวัติ
-- [ ] ไม่มี API key หรือ API ล่ม → ตอบแบบออฟไลน์ ไม่ crash
-- [ ] GitHub Actions รัน flake8 แบบเต็มและ pytest บน Python 3.10 และ 3.12
+**Final Sprint — DevOps & AI** (รายละเอียดใน `sprints/sprint-final/REPORT.md`)
+- [x] คำสั่ง `talk` ใช้ได้ทั้ง CLI และเว็บ AI รู้สถานะของสัตว์เลี้ยง และบันทึกลงประวัติ
+- [x] ไม่มี API key หรือ API ล่ม → ตอบแบบออฟไลน์ ไม่ crash
+- [x] GitHub Actions รัน flake8 แบบเต็มและ pytest บน Python 3.10 และ 3.12
 
 ## 8. ปัญหาทางเทคนิคและการ Refactor
 
@@ -228,7 +229,8 @@ classDiagram
 | 3 | Bug fix | error บางกรณีตอบเป็นหน้า HTML หน้าเว็บอ่านไม่ได้ | error handler ตอบ JSON ทุกกรณี |
 | 3 | Bug fix | ปุ่มเปลี่ยนชื่อ/ลบบนเว็บไม่ทำงานในเบราว์เซอร์ที่บล็อกกล่อง `prompt()`/`confirm()` | แก้ชื่อในแถว และยืนยันการลบบนปุ่มเอง |
 
-Final Sprint: ยังไม่เริ่ม จะบันทึกเพิ่มเมื่อพัฒนา
+| Final | Design | ถ้าเรียก AI ขณะถือ lock request อื่นต้องรอ API นานสุด 10 วินาที | อัปเดตสถานะ+บันทึกใน lock แล้วเรียก AI นอก lock |
+| Final | Refactor | CI ตรวจ flake8 เฉพาะ error ร้ายแรง และรันแค่ Python 3.10 | flake8 เต็ม (ไม่รวม snapshot ใน `sprints/`), matrix 3.10/3.12 |
 
 ## 9. ทางเลือกที่พิจารณา (Design Decisions)
 | เรื่อง | เลือก | ทางเลือกอื่น | เหตุผล |

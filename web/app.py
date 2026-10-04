@@ -59,6 +59,10 @@ def create_app(service=None):
     def pet_action(action):
         return jsonify(svc.perform(action))
 
+    @app.post("/api/pet/talk")
+    def pet_talk():
+        return jsonify(svc.talk(_json_body().get("message")))
+
     # ----- CRUD สัตว์เลี้ยง -----
     @app.get("/api/pets")
     def list_pets():

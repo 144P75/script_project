@@ -6,8 +6,10 @@
 import functools
 import threading
 
-from src.exceptions import InvalidActionError, NoActivePetError
+from src.companion import MAX_MESSAGE_LENGTH, PetCompanion
+from src.exceptions import InvalidActionError, InvalidInputError, NoActivePetError
 from src.history import InteractionHistory
+from src.pet import Pet
 from src.pet_manager import PetManager
 
 # action -> (source ที่บันทึกลงประวัติ, ชื่อเมธอดของ Pet)
@@ -38,9 +40,10 @@ def pet_view(pet, active_name=None):
 
 
 class PetService:
-    def __init__(self, manager=None, history=None):
+    def __init__(self, manager=None, history=None, companion=None):
         self.manager = manager or PetManager()
         self.history = history or InteractionHistory()
+        self.companion = companion or PetCompanion()
         self.lock = threading.RLock()
 
     def _active(self):
@@ -80,6 +83,25 @@ class PetService:
         self.manager.save()
         self.history.add(source, action, message, pet=pet.name)
         return {"message": message, "pet": self._view(pet)}
+
+    def talk(self, message):
+        """คุยกับสัตว์เลี้ยง: เรียก AI นอก lock เพื่อไม่ให้ request อื่นต้องรอ API"""
+        message = str(message or "").strip()
+        if not message:
+            raise InvalidInputError("กรุณาพิมพ์ข้อความ")
+        if len(message) > MAX_MESSAGE_LENGTH:
+            raise InvalidInputError(f"ข้อความยาวได้ไม่เกิน {MAX_MESSAGE_LENGTH} ตัวอักษร")
+        with self.lock:
+            pet = self._active()
+            pet.chat()
+            self.manager.save()
+            self.history.add("User", "talk", message, pet=pet.name)
+            snapshot = Pet.from_dict(pet.to_dict())
+        reply, online = self.companion.reply(snapshot, message)
+        source = "AI Companion" if online else "Companion (offline)"
+        with self.lock:
+            self.history.add(source, "talk", reply, pet=snapshot.name)
+        return {"reply": reply, "online": online, "pet": pet_view(snapshot, snapshot.name)}
 
     # ---------- CRUD ----------
     @synchronized

@@ -37,6 +37,13 @@ def test_actions_and_history(client):
     assert "fact" in data["filters"]["kinds"]
 
 
+def test_talk_endpoint(client):
+    client.post("/api/pets", json={"name": "Milo"})
+    data = client.post("/api/pet/talk", json={"message": "hi"}).get_json()
+    assert data["online"] is False and data["reply"] and data["pet"]["name"] == "Milo"
+    assert client.get("/api/history?kind=talk").get_json()["count"] == 2
+
+
 @pytest.mark.parametrize("method, url, body, status", [
     ("post", "/api/pets", {"name": ""}, 400),
     ("post", "/api/pets", None, 400),
@@ -47,6 +54,8 @@ def test_actions_and_history(client):
     ("get", "/api/history?sort_by=weight", None, 400),
     ("get", "/api/history?limit=abc", None, 400),
     ("get", "/api/nothing", None, 404),
+    ("post", "/api/pet/talk", {"message": ""}, 400),
+    ("post", "/api/pet/talk", None, 400),
 ])
 def test_errors_return_json(client, method, url, body, status):
     client.post("/api/pets", json={"name": "Milo"})

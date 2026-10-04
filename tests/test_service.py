@@ -57,3 +57,22 @@ def test_concurrent_requests_do_not_lose_writes(service):
     for t in threads:
         t.join()
     assert not service.has_pet()
+
+
+def test_talk_raises_happiness_and_logs_both_sides(service):
+    from src.exceptions import InvalidInputError
+    service.create_pet("Milo")
+    before = service.status()["happiness"]
+    result = service.talk("  สวัสดี  ")
+    assert result["online"] is False and result["pet"]["happiness"] == before + 5
+    talks = service.query_history(kind="talk", order="asc")
+    assert [(h["source"], h["content"]) for h in talks] == [
+        ("User", "สวัสดี"), ("Companion (offline)", result["reply"])]
+    for bad in ("", "   ", "x" * 201):
+        with pytest.raises(InvalidInputError):
+            service.talk(bad)
+
+
+def test_talk_without_pet(service):
+    with pytest.raises(NoActivePetError):
+        service.talk("hi")

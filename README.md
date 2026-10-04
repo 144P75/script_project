@@ -2,7 +2,7 @@
 
 ระบบจำลองสัตว์เลี้ยงเสมือนจริงที่เล่นได้ทั้งบน Terminal/CLI และหน้าเว็บ พัฒนาด้วยภาษา Python ตามหลัก **Object-Oriented Programming (OOP)** และ **Modular Architecture** รองรับการประมวลผลสถานะตามเวลาจริง (Time-based Decay), การจัดการสัตว์เลี้ยงหลายตัว, การเชื่อมต่อ External API และการทำงานร่วมกับ CI/CD Pipeline
 
-> **สถานะปัจจุบัน:** v0.3.1 (จบ Sprint 3) · แผน Final Sprint (AI Companion + CI/CD) อยู่ใน [`sprints/sprint-final/REPORT.md`](./sprints/sprint-final/REPORT.md)
+> **สถานะปัจจุบัน:** v0.4.0 (Final Sprint: AI Companion + CI/CD) · รายละเอียดใน [`sprints/sprint-final/REPORT.md`](./sprints/sprint-final/REPORT.md)
 
 ---
 
@@ -166,7 +166,7 @@ script_project/
 ```bash
    python -m src.main
 ```
-   พิมพ์ `help` เพื่อดูคำสั่งทั้งหมด: `feed` `play` `sleep` `fact` `pets` `addpet` `switchpet` `renamepet` `removepet` `history` `quit`
+   พิมพ์ `help` เพื่อดูคำสั่งทั้งหมด: `feed` `play` `sleep` `fact` `pets` `addpet` `switchpet` `renamepet` `removepet` `talk` `history` `quit`
 4. **เล่นผ่านหน้าเว็บ:**
 ```bash
    python -m web.app
@@ -175,9 +175,14 @@ script_project/
 
    เปิด CLI และเว็บพร้อมกันได้ ทั้งสองใช้ข้อมูลชุดเดียวกัน
 
-5. **ทดสอบระบบ:**
+5. **เปิด AI Companion (ไม่บังคับ):** ตั้ง API key ก่อนรัน ถ้าไม่ตั้ง `talk` จะตอบแบบออฟไลน์ตามอารมณ์
+```powershell
+   $env:ANTHROPIC_API_KEY="sk-ant-..."   # PowerShell (ห้าม commit key ลง repo)
+```
+
+6. **ทดสอบระบบ:**
 ```bash
-   pytest -v                      # รันเทสต์ทั้งหมด
+   python -m pytest -v            # รันเทสต์ทั้งหมด (ไม่ต้องใช้อินเทอร์เน็ตหรือ API key)
    flake8 .                       # ตรวจรูปแบบโค้ด
    python -m scripts.benchmark    # วัดความเร็ว search/filter/sort
 ```
