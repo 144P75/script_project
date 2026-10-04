@@ -12,7 +12,8 @@ FAKE_FACT = "🐱 เกร็ดความรู้แมว: test fact"
 @pytest.fixture(autouse=True)
 def no_network(monkeypatch):
     monkeypatch.setattr(Interaction, "fetch_cat_fact", staticmethod(lambda: FAKE_FACT))
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)  # ไม่เรียก AI จริงในเทสต์
+    for key in ("AI_PROVIDER", "GEMINI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY"):  # ไม่เรียก AI จริง
+        monkeypatch.delenv(key, raising=False)
 
 
 @pytest.fixture
