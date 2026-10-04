@@ -67,3 +67,31 @@ def test_errors_return_json(client, method, url, body, status):
 def test_duplicate_returns_409(client):
     client.post("/api/pets", json={"name": "Milo"})
     assert client.post("/api/pets", json={"name": "milo"}).status_code == 409
+
+
+@pytest.fixture
+def multi_client(tmp_path):
+    app = create_app(multi_player=True, data_dir=str(tmp_path / "players"))
+    app.testing = True
+    return app.test_client()
+
+
+def as_player(player_id):
+    return {"headers": {"X-Player-Id": player_id}}
+
+
+def test_each_player_has_own_pets(multi_client):
+    alice, bob = as_player("a" * 36), as_player("b" * 36)
+    assert multi_client.post("/api/pets", json={"name": "Milo"}, **alice).status_code == 201
+    assert multi_client.get("/api/pet", **bob).status_code == 409  # bob ยังไม่มีสัตว์เลี้ยง
+    multi_client.post("/api/pets", json={"name": "Milo"}, **bob)  # ชื่อซ้ำกับคนอื่นได้
+    multi_client.post("/api/pet/actions/feed", **alice)
+    assert multi_client.get("/api/history?kind=feed", **bob).get_json()["count"] == 0
+    assert [p["name"] for p in multi_client.get("/api/pets", **alice).get_json()["pets"]] == ["Milo"]
+
+
+@pytest.mark.parametrize("player_id", [None, "", "short", "../../etc/passwd-xxxxxxxx", "a" * 65])
+def test_invalid_player_id_rejected(multi_client, player_id):
+    kwargs = as_player(player_id) if player_id is not None else {}
+    res = multi_client.get("/api/pets", **kwargs)
+    assert res.status_code == 400 and "error" in res.get_json()

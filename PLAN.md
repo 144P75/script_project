@@ -179,6 +179,8 @@ classDiagram
 
 ทุก error ตอบเป็น `{"error": "ข้อความภาษาไทย"}`
 
+โหมดหลายผู้เล่น (`MULTI_PLAYER=1`, ใช้ตอน deploy): ทุก request ต้องมี header `X-Player-Id` (ตัวอักษร/ตัวเลข/`-` ยาว 16-64) ข้อมูลของแต่ละคนอยู่ใน `data/players/<รหัส>/` ถ้าไม่มีหรือผิดรูปแบบ → 400
+
 ## 7. Definition of Done
 
 รายละเอียดเต็มของแต่ละ Sprint อยู่ใน `sprints/sprintX/REPORT.md`
@@ -232,6 +234,7 @@ classDiagram
 | Final | Design | ถ้าเรียก AI ขณะถือ lock request อื่นต้องรอ API นานสุด 10 วินาที | อัปเดตสถานะ+บันทึกใน lock แล้วเรียก AI นอก lock |
 | Final | Refactor | CI ตรวจ flake8 เฉพาะ error ร้ายแรง และรันแค่ Python 3.10 | flake8 เต็ม (ไม่รวม snapshot ใน `sprints/`), matrix 3.10/3.12 |
 | Final | DevOps | ถ้า deploy ด้วย gunicorn หลาย worker แต่ละ process มี lock ของตัวเอง กลับไปเกิดข้อมูลหายเหมือน Sprint 3 | ใช้ 1 worker หลาย thread (`render.yaml`) |
+| Final | Design | deploy แล้วทุกคนที่เปิดลิงก์เห็นและแก้สัตว์เลี้ยงชุดเดียวกัน | แยก `PetService` ตามรหัสผู้เล่นของเบราว์เซอร์ แก้แค่ชั้น Web เพราะมี Service Layer อยู่แล้ว |
 
 ## 9. ทางเลือกที่พิจารณา (Design Decisions)
 | เรื่อง | เลือก | ทางเลือกอื่น | เหตุผล |

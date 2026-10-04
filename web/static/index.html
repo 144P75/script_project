@@ -296,9 +296,22 @@ const FACES = { hungry: "😿", sleepy: "😴", happy: "😸", ok: "😺" };
 const $ = (sel) => document.querySelector(sel);
 let hasPet = false;
 
+// รหัสผู้เล่นของเบราว์เซอร์นี้ (ใช้แยกข้อมูลเมื่อ deploy แบบหลายผู้เล่น) เก็บไว้ข้ามการปิดเบราว์เซอร์
+const PLAYER_ID = (() => {
+  const make = () => (crypto.randomUUID ? crypto.randomUUID()
+    : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2));
+  try {
+    let id = localStorage.getItem("playerId");
+    if (!id) { id = make(); localStorage.setItem("playerId", id); }
+    return id;
+  } catch (e) {
+    return make();  // เบราว์เซอร์ไม่ให้เก็บข้อมูล: ใช้รหัสชั่วคราวจนกว่าจะปิดหน้า
+  }
+})();
+
 async function api(path, options = {}) {
   const res = await fetch(path, {
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-Player-Id": PLAYER_ID },
     ...options,
   });
   let data = {};

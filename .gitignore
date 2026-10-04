@@ -11,3 +11,4 @@ interaction_history_backup.json
 *.corrupt
 *.tmp
 .env
+data/
