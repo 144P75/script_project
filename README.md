@@ -175,10 +175,15 @@ script_project/
 
    เปิด CLI และเว็บพร้อมกันได้ ทั้งสองใช้ข้อมูลชุดเดียวกัน
 
-5. **เปิด AI Companion (ไม่บังคับ):** ตั้ง API key ก่อนรัน ถ้าไม่ตั้ง `talk` จะตอบแบบออฟไลน์ตามอารมณ์
-```powershell
-   $env:ANTHROPIC_API_KEY="sk-ant-..."   # PowerShell (ห้าม commit key ลง repo)
-```
+5. **เปิด AI Companion (ไม่บังคับ):** ตั้ง API key ของเจ้าใดเจ้าหนึ่งก่อนรัน ถ้าไม่ตั้ง `talk` จะตอบแบบออฟไลน์ตามอารมณ์ (ห้าม commit key ลง repo)
+
+   | AI | ตั้งค่า (cmd) | สร้าง key ที่ |
+   |---|---|---|
+   | Gemini | `set GEMINI_API_KEY=...` | aistudio.google.com |
+   | ChatGPT | `set OPENAI_API_KEY=...` | platform.openai.com |
+   | Claude | `set ANTHROPIC_API_KEY=...` | platform.claude.com |
+
+   ถ้ามีหลาย key เลือกเองได้ด้วย `set AI_PROVIDER=gemini` (หรือ `openai`, `claude`)
 
 6. **ทดสอบระบบ:**
 ```bash

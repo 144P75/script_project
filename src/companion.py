@@ -1,14 +1,21 @@
-"""AI Companion: สัตว์เลี้ยงตอบข้อความตามสถานะจริง (Claude API) พร้อมโหมดออฟไลน์"""
+"""AI Companion: สัตว์เลี้ยงตอบข้อความตามสถานะจริง (Gemini / ChatGPT / Claude) พร้อมโหมดออฟไลน์"""
 import os
 import random
 
 import requests
 
-API_URL = "https://api.anthropic.com/v1/messages"
-DEFAULT_MODEL = "claude-haiku-4-5-20251001"
 MAX_MESSAGE_LENGTH = 200
-MAX_TOKENS = 150
 TIMEOUT = 10
+
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+GEMINI_MODEL = "gemini-flash-latest"
+OPENAI_URL = "https://api.openai.com/v1/chat/completions"
+OPENAI_MODEL = "gpt-5.4-mini"
+CLAUDE_URL = "https://api.anthropic.com/v1/messages"
+CLAUDE_MODEL = "claude-haiku-4-5-20251001"
+
+# provider -> ชื่อ environment variable ของ key (เรียงตามลำดับที่เลือกใช้ก่อน)
+PROVIDERS = {"gemini": "GEMINI_API_KEY", "openai": "OPENAI_API_KEY", "claude": "ANTHROPIC_API_KEY"}
 
 OFFLINE_REPLIES = {
     "hungry": ["เมี้ยว... {name} หิวจนท้องร้องแล้ว ขอข้าวก่อนได้ไหม 🍖",
@@ -33,21 +40,24 @@ def build_system_prompt(pet):
 
 
 class PetCompanion:
-    """มี API key → ถาม Claude API, ไม่มี key หรือ API ใช้ไม่ได้ → ตอบแบบออฟไลน์ตามอารมณ์"""
+    """ใช้ AI_PROVIDER ถ้าตั้งไว้ ไม่งั้นใช้เจ้าแรกที่มี key — ไม่มี key หรือ API ใช้ไม่ได้ → ออฟไลน์"""
 
-    def __init__(self, api_key=None, model=None, timeout=TIMEOUT):
-        self.api_key = os.environ.get("ANTHROPIC_API_KEY", "") if api_key is None else api_key
-        self.model = model or os.environ.get("ANTHROPIC_MODEL", DEFAULT_MODEL)
+    def __init__(self, provider=None, api_key=None, timeout=TIMEOUT):
+        provider = provider or os.environ.get("AI_PROVIDER", "").strip().lower() or next(
+            (name for name, env in PROVIDERS.items() if os.environ.get(env)), None)
+        self.provider = provider if provider in PROVIDERS else None
+        self.api_key = api_key if api_key is not None else os.environ.get(PROVIDERS.get(self.provider, ""), "")
         self.timeout = timeout
 
     def reply(self, pet, message):
         """คืน (ข้อความตอบ, True ถ้าตอบโดย AI จริง)"""
-        if self.api_key:
+        if self.provider and self.api_key:
             try:
-                text = self._ask_api(pet, message)
+                ask = getattr(self, f"_ask_{self.provider}")
+                text = ask(build_system_prompt(pet), message)
                 if text:
                     return text, True
-            except (requests.RequestException, ValueError, KeyError, TypeError):
+            except (requests.RequestException, ValueError, KeyError, TypeError, IndexError):
                 pass
         return self.offline_reply(pet), False
 
@@ -55,18 +65,51 @@ class PetCompanion:
     def offline_reply(pet):
         return random.choice(OFFLINE_REPLIES[pet.mood_tracker.get_mood_key()]).format(name=pet.name)
 
-    def _ask_api(self, pet, message):
+    def _ask_gemini(self, system, message):
+        model = os.environ.get("GEMINI_MODEL", GEMINI_MODEL)
         response = requests.post(
-            API_URL,
+            GEMINI_URL.format(model=model),
+            headers={"x-goog-api-key": self.api_key},
+            json={
+                "system_instruction": {"parts": [{"text": system}]},
+                "contents": [{"role": "user", "parts": [{"text": message}]}],
+                "generationConfig": {"maxOutputTokens": 1024},
+            },
+            timeout=self.timeout,
+        )
+        response.raise_for_status()
+        parts = response.json()["candidates"][0]["content"]["parts"]
+        return "".join(p.get("text", "") for p in parts).strip()
+
+    def _ask_openai(self, system, message):
+        response = requests.post(
+            OPENAI_URL,
+            headers={"Authorization": f"Bearer {self.api_key}"},
+            json={
+                "model": os.environ.get("OPENAI_MODEL", OPENAI_MODEL),
+                "max_completion_tokens": 1024,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": message},
+                ],
+            },
+            timeout=self.timeout,
+        )
+        response.raise_for_status()
+        return (response.json()["choices"][0]["message"]["content"] or "").strip()
+
+    def _ask_claude(self, system, message):
+        response = requests.post(
+            CLAUDE_URL,
             headers={
                 "x-api-key": self.api_key,
                 "anthropic-version": "2023-06-01",
                 "content-type": "application/json",
             },
             json={
-                "model": self.model,
-                "max_tokens": MAX_TOKENS,
-                "system": build_system_prompt(pet),
+                "model": os.environ.get("ANTHROPIC_MODEL", CLAUDE_MODEL),
+                "max_tokens": 150,
+                "system": system,
                 "messages": [{"role": "user", "content": message}],
             },
             timeout=self.timeout,
