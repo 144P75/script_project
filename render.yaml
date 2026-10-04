@@ -11,5 +11,7 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.7"
+      - key: MULTI_PLAYER
+        value: "1"  # แต่ละเบราว์เซอร์มีสัตว์เลี้ยงของตัวเอง
       - key: GEMINI_API_KEY
         sync: false  # ใส่ค่าเองในหน้า Render ห้ามใส่ใน repo
