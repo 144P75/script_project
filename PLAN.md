@@ -14,6 +14,8 @@
 ผู้ใช้ต้องการเกมเลี้ยงสัตว์ที่ "มีชีวิต" คือสถานะเปลี่ยนไปตามเวลาจริงแม้ปิดโปรแกรม
 เล่นต่อจากเดิมได้ มีสัตว์เลี้ยงหลายตัว และดูย้อนหลังได้ว่าทำอะไรไปบ้าง
 ระบบนี้เล่นได้ทั้งทาง CLI และหน้าเว็บ โดยใช้ข้อมูลชุดเดียวกัน
+และคุยกับสัตว์เลี้ยงได้ผ่าน AI ที่ตอบตามสถานะจริงของสัตว์เลี้ยง
+เว็บออนไลน์: https://virtual-pet-companion.onrender.com/
 
 ## 2. สถาปัตยกรรม (Separation of Concerns)
 
@@ -21,8 +23,9 @@
  Presentation Layer   src/cli.py + src/main.py (CLI)      web/app.py + web/static/index.html (Web)
                                  \                                  /
  Service Layer                    src/service.py  (PetService — จุดเดียวที่ UI เรียกใช้)
-                                 /            |               \
- Business Logic      src/pet.py        src/pet_manager.py     src/history.py (search/filter/sort)
+                     /            |               |                  \
+ Business Logic   src/pet.py   src/pet_manager.py   src/history.py   src/companion.py (AI) ──> Gemini / ChatGPT / Claude
+                                                    (search/filter/sort)   (ไม่มี key / API ล่ม → ตอบแบบออฟไลน์)
                                               |                                     |
  Data Access                        src/storage.py (JsonStore: atomic write + backup + recovery)
                                               |
@@ -32,7 +35,8 @@
 หลักการสำคัญ
 - **UI ไม่แตะไฟล์หรือ Pet โดยตรง** ทุกคำสั่งผ่าน `PetService` ทำให้ CLI กับเว็บทำงานเหมือนกันทุกประการ
 - **State Consistency** ทุกเมธอดของ `PetService` จะ reload จากไฟล์ก่อน และบันทึกทันทีหลังเปลี่ยนข้อมูล
-  และมี lock กันหลาย request เขียนทับกัน
+  และมี lock กันหลาย request เขียนทับกัน (เรียก AI นอก lock เพื่อไม่ให้ request อื่นรอ API)
+- **AI ไม่ผูกกับเจ้าเดียว** ส่วนอื่นเรียกแค่ `PetCompanion.reply()` เปลี่ยนเจ้า AI ได้โดยแก้แค่ `companion.py`
 - **Custom Exceptions** ทุก error ของระบบสืบทอดจาก `PetError` UI ดักที่เดียว CLI แสดงข้อความ เว็บแปลงเป็น HTTP status
 
 ## 3. UML Class Diagram
@@ -61,6 +65,7 @@ classDiagram
         +play() str
         +sleep() str
         +interact_api() str
+        +chat()
         +to_dict() dict
         +from_dict(data)$ Pet
     }
@@ -89,9 +94,15 @@ classDiagram
         +query(keyword, source, kind, pet, sort_by, order) list
         +distinct(field) list
     }
+    class PetCompanion {
+        +provider
+        +reply(pet, message) (str, bool)
+        +offline_reply(pet)$ str
+    }
     class PetService {
         +status() dict
         +perform(action) dict
+        +talk(message) dict
         +create_pet(name) dict
         +list_pets(sort_by, order) list
         +select_pet(name) dict
@@ -113,6 +124,8 @@ classDiagram
     InteractionHistory --> JsonStore
     PetService --> PetManager
     PetService --> InteractionHistory
+    PetService --> PetCompanion
+    PetCompanion ..> Pet
     CLIHandler ..> PetService
     FlaskApp ..> PetService
     PetError <|-- InvalidInputError
@@ -151,8 +164,8 @@ classDiagram
 ```
 | field | ค่าที่เป็นไปได้ |
 |---|---|
-| source | `User`, `Cat Facts API`, `System` |
-| kind | `feed`, `play`, `sleep`, `fact`, `create`, `rename`|
+| source | `User`, `Cat Facts API`, `System`, `AI Companion`, `Companion (offline)` |
+| kind | `feed`, `play`, `sleep`, `fact`, `talk`, `create`, `rename` |
 
 ## 5. กฎของเกม (Business Rules)
 | เหตุการณ์ | ผล |
@@ -162,6 +175,7 @@ classDiagram
 | play | สุข +25, หิว +15, พลังงาน −20 · ปฏิเสธถ้าหิว ≥ 90 หรือพลังงาน < 20 |
 | sleep | พลังงาน = 100, หิว +20 |
 | fact | สุข +10 + เกร็ดความรู้จาก Cat Facts API (ออฟไลน์ใช้ข้อมูลสำรอง) |
+| talk | สุข +5 · ข้อความ 1–200 ตัวอักษร · AI ตอบตามสถานะ (บอกเป็นความรู้สึก ไม่พูดตัวเลข) |
 | อารมณ์ | หิว > 80 → หิวมาก, พลังงาน < 20 → ง่วง, สุข > 70 → มีความสุข, นอกนั้น → อารมณ์ดี |
 
 ## 6. Web API
@@ -233,7 +247,6 @@ classDiagram
 | 3 | Bug fix | เว็บส่ง request พร้อมกันแล้วข้อมูลหาย (last write wins) | ใส่ lock ใน `PetService` |
 | 3 | Bug fix | error บางกรณีตอบเป็นหน้า HTML หน้าเว็บอ่านไม่ได้ | error handler ตอบ JSON ทุกกรณี |
 | 3 | Bug fix | ปุ่มเปลี่ยนชื่อ/ลบบนเว็บไม่ทำงานในเบราว์เซอร์ที่บล็อกกล่อง `prompt()`/`confirm()` | แก้ชื่อในแถว และยืนยันการลบบนปุ่มเอง |
-
 | Final | Design | ถ้าเรียก AI ขณะถือ lock request อื่นต้องรอ API นานสุด 10 วินาที | อัปเดตสถานะ+บันทึกใน lock แล้วเรียก AI นอก lock |
 | Final | Refactor | CI ตรวจ flake8 เฉพาะ error ร้ายแรง และรันแค่ Python 3.10 | flake8 เต็ม (ไม่รวม snapshot ใน `sprints/`), matrix 3.10/3.12 |
 | Final | DevOps | ถ้า deploy ด้วย gunicorn หลาย worker แต่ละ process มี lock ของตัวเอง กลับไปเกิดข้อมูลหายเหมือน Sprint 3 | ใช้ 1 worker หลาย thread (`render.yaml`) |
@@ -248,24 +261,32 @@ classDiagram
 | การเชื่อม UI กับ Logic | Service Layer (Facade) | ให้ UI เรียก `PetManager` ตรงๆ | กันโค้ดซ้ำระหว่าง CLI กับเว็บ และคุม consistency ได้ที่เดียว |
 | การส่งต่อ error | Custom Exceptions | คืนค่า string/None | UI แยกกรณีได้ชัด เว็บแมปเป็น HTTP status ได้ |
 | การเรียงลำดับ | `sorted()` + key tuple หลายคีย์ | เขียน sort เอง | Timsort O(n log n) และ stable · 1,000 รายการใช้ ~1 ms |
+| เรียก AI | `requests` เรียก REST API ตรง | SDK ของแต่ละเจ้า | ไม่เพิ่ม dependency และรองรับหลายเจ้าด้วยรูปแบบเดียวกัน |
+| เมื่อ AI ใช้ไม่ได้ | ตอบแบบออฟไลน์ตามอารมณ์ | แสดง error | เกมเล่นต่อได้เสมอ แม้ไม่มี key หรือไม่มีอินเทอร์เน็ต |
+| เก็บ API key | `.env` / environment variable | ใส่ในโค้ด, ให้ผู้ใช้กรอกบนเว็บ | key ไม่หลุดขึ้น GitHub และไม่ต้องเก็บ key ของผู้ใช้บน server |
+| Deploy | Render (gunicorn 1 worker) | GitHub Pages | Pages รันได้แค่ไฟล์ static แต่ระบบต้องมี Flask · 1 worker เพราะ lock ใช้ได้ภายใน process เดียว |
 
 ## 10. โครงสร้างโปรเจกต์
 ```text
 script_project/
-├── .github/workflows/ci.yml   flake8 + pytest
+├── .github/workflows/ci.yml   flake8 + pytest (Python 3.10 / 3.12)
 ├── src/
 │   ├── main.py                CLI entry point + คำสั่ง
 │   ├── cli.py                 CLIHandler (แสดงผล/รับอินพุต)
 │   ├── service.py             PetService (Service Layer)
+│   ├── companion.py           PetCompanion (AI: Gemini / ChatGPT / Claude + offline)
 │   ├── pet.py                 Pet, MoodTracker, Interaction
 │   ├── pet_manager.py         PetManager (CRUD สัตว์เลี้ยง)
 │   ├── history.py             InteractionHistory + search/filter/sort
 │   ├── storage.py             JsonStore
 │   └── exceptions.py          Custom Exceptions
 ├── web/
-│   ├── app.py                 Flask API
+│   ├── app.py                 Flask API (+ โหมดหลายผู้เล่น)
 │   └── static/index.html      หน้าเว็บเกม
 ├── scripts/benchmark.py       วัดความเร็ว search/filter/sort
-├── tests/                     pytest
-├── sprints/                   รายงานแต่ละ Sprint
+├── tests/                     pytest (mock AI ไม่ต้องใช้อินเทอร์เน็ต)
+├── sprints/                   รายงานและ snapshot โค้ดแต่ละ Sprint
+├── .env.example               ตัวอย่างการตั้ง API key
+├── render.yaml                ตั้งค่า deploy บน Render
+└── requirements.txt           dependencies
 ```
