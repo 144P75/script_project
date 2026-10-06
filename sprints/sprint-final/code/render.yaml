@@ -1,0 +1,17 @@
+# Render Blueprint: merge เข้า main แล้ว Render deploy ใหม่อัตโนมัติ
+# ใช้ 1 worker เท่านั้น เพราะ lock ใน PetService กันการเขียนไฟล์ทับกันได้ภายใน process เดียว
+services:
+  - type: web
+    name: virtual-pet-companion
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn "web.app:create_app()" --workers 1 --threads 4 --bind 0.0.0.0:$PORT
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: MULTI_PLAYER
+        value: "1"  # แต่ละเบราว์เซอร์มีสัตว์เลี้ยงของตัวเอง
+      - key: GEMINI_API_KEY
+        sync: false  # ใส่ค่าเองในหน้า Render ห้ามใส่ใน repo

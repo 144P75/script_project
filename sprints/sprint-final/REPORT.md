@@ -1,6 +1,6 @@
 # Final Sprint: DevOps, CI/CD & AI Integration
 
-**สถานะ:** พัฒนาเสร็จ (v0.4.3) · นำเสนอ 6-7 ต.ค. 2569 · ส่งงาน 16 ต.ค. 2569 (v1.0.0)
+**สถานะ:** เสร็จสมบูรณ์ (v1.0.0) · นำเสนอ 6-7 ต.ค. 2569 · ส่งงาน 16 ต.ค. 2569
 **จุดเน้น:** AI Companion, Automated Testing, CI/CD บน GitHub Actions และ Deploy ออนไลน์
 **เว็บออนไลน์:** https://virtual-pet-companion.onrender.com/
 
@@ -63,7 +63,7 @@ PetCompanion.reply(pet, message)                                            [น
 | 0.4.1 | รองรับ Gemini / ChatGPT / Claude, แก้ตัวอักษรช่องพิมพ์จาง |
 | 0.4.2 | `.env`, ลองใหม่เมื่อ AI error ชั่วคราว, เตรียม deploy (`render.yaml`, gunicorn) |
 | 0.4.3 | โหมดหลายผู้เล่นบนเว็บออนไลน์ |
-| 1.0.0 | (16 ต.ค.) เอกสารครบ + แก้ตามที่พบระหว่างนำเสนอ |
+| 1.0.0 | เวอร์ชันส่งงาน: เอกสารครบ + snapshot โค้ดใน `sprints/sprint-final/code/` |
 
 ## ข้อจำกัดที่ทราบ
 - Render แผนฟรี: server หลับเมื่อไม่มีคนใช้ 15 นาที และข้อมูลหายเมื่อหลับ restart หรือ deploy ใหม่
