@@ -213,7 +213,7 @@ classDiagram
 - [x] คำสั่ง `talk` ใช้ได้ทั้ง CLI และเว็บ AI รู้สถานะของสัตว์เลี้ยง และบันทึกลงประวัติ
 - [x] ไม่มี API key หรือ API ล่ม → ตอบแบบออฟไลน์ ไม่ crash
 - [x] GitHub Actions รัน flake8 แบบเต็มและ pytest บน Python 3.10 และ 3.12
-- [ ] - [x] ไม่มี API key อยู่ใน repo (ใช้ `.env` หรือ environment variable)
+- [x] ไม่มี API key อยู่ใน repo (ใช้ `.env` หรือ environment variable)
 - [x] merge เข้า main แล้ว Render deploy อัตโนมัติ (https://virtual-pet-companion.onrender.com/)
 - [x] บนเว็บออนไลน์ ผู้ใช้แต่ละคนเห็นข้อมูลของตัวเอง
 
