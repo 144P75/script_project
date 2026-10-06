@@ -213,6 +213,9 @@ classDiagram
 - [x] คำสั่ง `talk` ใช้ได้ทั้ง CLI และเว็บ AI รู้สถานะของสัตว์เลี้ยง และบันทึกลงประวัติ
 - [x] ไม่มี API key หรือ API ล่ม → ตอบแบบออฟไลน์ ไม่ crash
 - [x] GitHub Actions รัน flake8 แบบเต็มและ pytest บน Python 3.10 และ 3.12
+- [ ] - [x] ไม่มี API key อยู่ใน repo (ใช้ `.env` หรือ environment variable)
+- [x] merge เข้า main แล้ว Render deploy อัตโนมัติ (https://virtual-pet-companion.onrender.com/)
+- [x] บนเว็บออนไลน์ ผู้ใช้แต่ละคนเห็นข้อมูลของตัวเอง
 
 ## 8. ปัญหาทางเทคนิคและการ Refactor
 
@@ -235,6 +238,7 @@ classDiagram
 | Final | Refactor | CI ตรวจ flake8 เฉพาะ error ร้ายแรง และรันแค่ Python 3.10 | flake8 เต็ม (ไม่รวม snapshot ใน `sprints/`), matrix 3.10/3.12 |
 | Final | DevOps | ถ้า deploy ด้วย gunicorn หลาย worker แต่ละ process มี lock ของตัวเอง กลับไปเกิดข้อมูลหายเหมือน Sprint 3 | ใช้ 1 worker หลาย thread (`render.yaml`) |
 | Final | Design | deploy แล้วทุกคนที่เปิดลิงก์เห็นและแก้สัตว์เลี้ยงชุดเดียวกัน | แยก `PetService` ตามรหัสผู้เล่นของเบราว์เซอร์ แก้แค่ชั้น Web เพราะมี Service Layer อยู่แล้ว |
+| Final | Bug fix | Gemini ฟรีตอบ 503/429 เป็นพักๆ ผู้ใช้เห็นโหมดออฟไลน์ทั้งที่ key ใช้ได้ | ลองใหม่ 1 ครั้งก่อนตกไปออฟไลน์ ใช้รุ่น lite และ log สาเหตุ |
 
 ## 9. ทางเลือกที่พิจารณา (Design Decisions)
 | เรื่อง | เลือก | ทางเลือกอื่น | เหตุผล |
