@@ -20,6 +20,8 @@
 6. **เชื่อม Front-End กับ Back-End (Full-Stack):** ให้ CLI และหน้าเว็บใช้ Business Logic และข้อมูลชุดเดียวกัน
 7. **ดึงข้อมูลสุ่มจาก API:** เชื่อมต่อ Cat Facts API เพื่อนำเกร็ดความรู้มาแสดงเวลามีปฏิสัมพันธ์กับสัตว์เลี้ยง
 8. **ทำระบบป้องกันโปรแกรมพัง:** ตรวจสอบอินพุตและจัดการข้อผิดพลาดด้วย Custom Exceptions เพื่อให้โปรแกรมทำงานต่อเนื่อง
+9. **เชื่อมต่อ AI (AI Integration):** ให้ผู้ใช้คุยกับสัตว์เลี้ยงได้ โดย AI ตอบในบทบาทแมวตามสถานะจริง (หิว / ง่วง / มีความสุข)
+10. **DevOps และ CI/CD:** ทดสอบอัตโนมัติและตรวจรูปแบบโค้ดทุกครั้งที่ push ผ่าน GitHub Actions และ Deploy ขึ้นเว็บออนไลน์อัตโนมัติ
 
 ---
 
@@ -35,7 +37,9 @@
 * **Interaction History:** บันทึกทุกการโต้ตอบ ค้นหา กรองตามแหล่งที่มา/ประเภท/สัตว์เลี้ยง และเรียงลำดับได้หลายคีย์
 * **Custom Exceptions:** แจ้งข้อผิดพลาดเป็นระบบ เช่น `PetNotFoundError`, `DuplicatePetError` และแปลงเป็น HTTP status บนเว็บ
 * **API Integration:** ดึงเกร็ดความรู้แมวจาก Cat Facts API พร้อมข้อมูลสำรองเมื่อออฟไลน์
-* **DevOps Ready:** CI/CD Pipeline ด้วย GitHub Actions (`pytest` และ `flake8`)
+* **AI Companion:** คำสั่ง `talk` คุยกับสัตว์เลี้ยงผ่าน Gemini / ChatGPT / Claude ตอบตามสถานะจริง ความสุข +5 ต่อการคุย ถ้าไม่มี key หรือ AI ล่มจะตอบแบบออฟไลน์ ไม่ crash
+* **DevOps Ready:** CI ด้วย GitHub Actions (`flake8` + `pytest` บน Python 3.10 และ 3.12) และ CD ด้วย Render (deploy ใหม่อัตโนมัติเมื่อ merge เข้า main)
+* **Multi-Player Online:** บนเว็บออนไลน์ แต่ละเบราว์เซอร์มีสัตว์เลี้ยงของตัวเอง
 
 ---
 
@@ -45,7 +49,7 @@
 
 1. **Presentation Layer** (`src/cli.py`, `src/main.py`, `web/app.py`, `web/static/index.html`): แสดงผลและรับอินพุตผ่าน CLI และหน้าเว็บ
 2. **Service Layer** (`src/service.py`): `PetService` จุดเดียวที่ทั้ง CLI และเว็บเรียกใช้ โหลดข้อมูลล่าสุดก่อนทุกคำสั่ง บันทึกทันทีหลังเปลี่ยน และป้องกันการเขียนทับกัน
-3. **Business Logic Layer** (`src/pet.py`, `src/pet_manager.py`, `src/history.py`, `src/exceptions.py`): คำนวณสถานะ, Decay, อารมณ์, จัดการสัตว์เลี้ยงหลายตัว และค้นหา/กรอง/เรียงประวัติ
+3. **Business Logic Layer** (`src/pet.py`, `src/pet_manager.py`, `src/history.py`, `src/companion.py`, `src/exceptions.py`): คำนวณสถานะ, Decay, อารมณ์, จัดการสัตว์เลี้ยงหลายตัว, ค้นหา/กรอง/เรียงประวัติ และ AI Companion
 4. **Data Access Layer** (`src/storage.py`, ไฟล์ `.json`): อ่าน/เขียนไฟล์อย่างปลอดภัย สำรองและกู้คืนข้อมูล
 
 ```text
@@ -53,8 +57,8 @@
                      \                     /
                    PetService (service.py)
                   /           |            \
-           pet.py      pet_manager.py     history.py
-                              |               |
+    pet.py   pet_manager.py   history.py   companion.py ──> Gemini / ChatGPT / Claude
+                   |               |
                      storage.py (JsonStore) → ไฟล์ JSON
 ```
 
@@ -74,12 +78,20 @@
 * `requests` — เรียก Cat Facts API
 * `pytest` — ทดสอบอัตโนมัติ
 * `flake8` — ตรวจรูปแบบโค้ดตาม PEP8
+* `python-dotenv` — อ่าน API key จากไฟล์ `.env`
+* `gunicorn` — รันเว็บบน server (Render)
+
+**External API / บริการ**
+* Cat Facts API — เกร็ดความรู้แมว
+* Gemini / ChatGPT / Claude API — AI Companion
+* GitHub Actions (CI) และ Render (CD / Hosting)
 
 **Design Patterns**
 * **Service Layer** — `PetService` เป็นทางเข้าเดียวของ CLI และเว็บ
 * **Repository** — `JsonStore` แยกการอ่านเขียนไฟล์ออกจาก Business Logic
 * **Decorator** — `@synchronized` ใส่ล็อกให้ทุกเมธอดของ `PetService`
 * **Exception Hierarchy** — ข้อผิดพลาดทุกแบบสืบทอดจาก `PetError`
+* **Strategy / Fallback** — `PetCompanion` เลือกเจ้า AI จาก key ที่ตั้งไว้ และตกไปตอบแบบออฟไลน์เมื่อใช้ไม่ได้
 ## 🧩 โครงสร้างโค้ด (Source Code)
 
 ```text
@@ -94,6 +106,7 @@ script_project/
 │   ├── service.py                      Service Layer — PetService จุดเดียวที่ CLI และเว็บเรียกใช้
 │   ├── pet.py                          Business Logic — Pet, MoodTracker, Interaction (Cat Facts API)
 │   ├── pet_manager.py                  Business Logic — CRUD สัตว์เลี้ยงหลายตัว, ตรวจชื่อ, เรียงลำดับ
+│   ├── companion.py                    AI Companion — Gemini / ChatGPT / Claude + โหมดออฟไลน์
 │   ├── history.py                      บันทึก/ค้นหา/กรอง/เรียงลำดับ ประวัติการโต้ตอบ
 │   ├── exceptions.py                   Custom Exceptions
 │   └── storage.py                      Data Access — JsonStore (atomic write, backup, recovery)
@@ -106,8 +119,9 @@ script_project/
 ├── scripts/
 │   └── benchmark.py                    วัดความเร็ว search/filter/sort กับข้อมูล 1,000 รายการ
 │
-├── tests/                              Automated Tests (58 เทสต์)
+├── tests/                              Automated Tests (91 เทสต์)
 │   ├── test_pet.py                     ทดสอบ MoodTracker, Pet (decay, feed, play, sleep)
+│   ├── test_companion.py               ทดสอบ AI Companion (mock ทุกเจ้า, ลองใหม่, ออฟไลน์)
 │   ├── test_pet_manager.py             ทดสอบ CRUD, ชื่อผิด/ซ้ำ, ไฟล์หาย/เสีย, backup
 │   ├── test_history.py                 ทดสอบ search/filter/sort, ไฟล์ประวัติเสีย, ความเร็ว
 │   ├── test_service.py                 ทดสอบ PetService, ข้อมูล CLI ↔ เว็บตรงกัน, request พร้อมกัน
@@ -115,7 +129,9 @@ script_project/
 │
 ├── conftest.py                         Fixtures กลางของเทสต์ (ไฟล์ชั่วคราว, mock API)
 ├── setup.cfg                           ตั้งค่า flake8 และ pytest
-├── requirements.txt                    Dependencies: pytest, flake8, requests, flask
+├── requirements.txt                    Dependencies: pytest, flake8, requests, flask, python-dotenv, gunicorn
+├── render.yaml                         ตั้งค่า Deploy บน Render (gunicorn 1 worker)
+├── .env.example                        ตัวอย่างไฟล์ตั้งค่า API key ของ AI
 └── .gitignore                          ไฟล์ที่ไม่ track: pets.json, interaction_history.json, __pycache__ ฯลฯ
 ```
 
@@ -129,7 +145,7 @@ script_project/
 ├── PLAN.md                            สถาปัตยกรรม, Class Diagram, Data Schema, API, DoD, ประวัติการ Refactor
 ├── CHANGELOG.md                       การเปลี่ยนแปลงแต่ละเวอร์ชัน
 │
-└── sprints/                           หลักฐานการทำงานแยกตามรอบ (ไม่มีโค้ด)
+└── sprints/                           หลักฐานการทำงานแยกตามรอบ + snapshot โค้ดของแต่ละ Sprint
     ├── sprint1/
     │   ├── code/                      Source Code ของ Sprint 1
     │   ├── REPORT.md                  Scope, DoD, บทบาททีมของ Sprint
@@ -152,7 +168,11 @@ script_project/
     │   └── PEER_EVALUATION.md
     │
     └── sprint-final/
-        └── REPORT.md                  แผนงาน Final Sprint (ยังไม่เริ่ม)
+        ├── code/                      Source Code ฉบับส่งงาน Final (v1.0.0)
+        ├── REPORT.md                  Scope, DoD, บทบาท, สถาปัตยกรรม AI, ข้อจำกัด
+        ├── QA_TEST_LOG.md             ผลทดสอบ TC-F01 ถึง TC-F19
+        ├── RETROSPECTIVE.md           Wow! / Whoops! / แนวทางต่อยอด
+        └── PEER_EVALUATION.md         คะแนนประเมิน self/peer ตามบทบาท
 ```
 
 > รายละเอียดผลงานแต่ละ Sprint อยู่ในโฟลเดอร์ [`sprints/`](./sprints)
