@@ -1,6 +1,6 @@
 # Final Sprint: DevOps, CI/CD & AI Integration
 
-**สถานะ:** เสร็จสมบูรณ์ (v1.0.0) · นำเสนอ 6-7 ต.ค. 2569 · ส่งงาน 16 ต.ค. 2569
+**สถานะ:** เสร็จสมบูรณ์ (v1.0.0) · นำเสนอ 13-14 ต.ค. 2569 · ส่งงาน 16 ต.ค. 2569
 **จุดเน้น:** AI Companion, Automated Testing, CI/CD บน GitHub Actions และ Deploy ออนไลน์
 **เว็บออนไลน์:** https://virtual-pet-companion.onrender.com/
 
